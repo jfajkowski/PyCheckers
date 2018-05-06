@@ -1,6 +1,7 @@
 from typing import Tuple, List
 
 import numpy as np
+import pkg_resources
 import pygame
 
 
@@ -91,9 +92,11 @@ class Square:
 
 
 class Piece:
+    crown_img = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
+
     def __init__(self, color: Tuple[int, int, int]):
         self._color = color
-        self._king = False
+        self._king = True
 
     @property
     def is_king(self):
@@ -103,12 +106,26 @@ class Piece:
         w = surface.get_width()
         h = surface.get_height()
         board_size = min(w, h)
-        piece_radius = int((board_size / Board.SIZE) / 2)
+        square_size = int(board_size / Board.SIZE)
+        piece_radius = int((board_size / Board.SIZE) / 2) - 8
+        square_pos = (
+            int((w - board_size) / 2 + x * square_size),
+            int((h - board_size) / 2 + y * square_size)
+        )
         piece_pos = (
-            int((w - board_size) / 2 + (x + 0.5) * (piece_radius * 2)),
-            int((h - board_size) / 2 + (y + 0.5) * (piece_radius * 2))
+            int(square_pos[0] + square_size / 2),
+            int(square_pos[1] + square_size / 2)
         )
         pygame.draw.circle(surface, self._color, piece_pos, piece_radius)
+
+        if self._color is Color.DARK_PIECE:
+            pygame.draw.circle(surface, Color.LIGHT_PIECE, piece_pos, int(piece_radius / 2), 1)
+        elif self._color is Color.LIGHT_PIECE:
+            pygame.draw.circle(surface, Color.DARK_PIECE, piece_pos, int(piece_radius / 2), 1)
+
+        if self.is_king:
+            surface.blit(Piece.crown_img, square_pos)
+
 
     def __str__(self):
         if self._color is Color.DARK_PIECE:

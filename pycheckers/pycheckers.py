@@ -1,6 +1,7 @@
 import pygame
 
 from elements import Board
+from strategies import MiniMaxGameStrategy, RandomGameStrategy
 
 
 class Game:
@@ -9,12 +10,17 @@ class Game:
         self._surface = surface
         self._max_fps = max_fps
         self._board = Board()
+        self._player_1 = RandomGameStrategy()
+        self._player_2 = MiniMaxGameStrategy()
 
     def run(self):
         while True:
             clock.tick(self._max_fps)
             self._board.draw(self._surface)
             pygame.display.update()
+            self._player_1.move(self._board)
+            self._player_2.move(self._board)
+
 
 
 if __name__ == '__main__':

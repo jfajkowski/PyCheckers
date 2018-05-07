@@ -6,8 +6,9 @@ import pygame
 
 
 class Color:
-    LIGHT_PIECE = (0, 0, 0)
-    DARK_PIECE = (255, 255, 255)
+    LIGHT_PIECE = (255, 255, 255)
+    DARK_PIECE = (0, 0, 0)
+    MARKED_PIECE = (255, 0, 0)
     LIGHT_SQUARE = (121, 85, 72)
     DARK_SQUARE = (62, 39, 35)
 
@@ -17,78 +18,74 @@ class Board:
     FILLED_ROWS = 3
 
     def __init__(self):
-        self.state = np.empty((Board.SIZE, Board.SIZE), dtype=Square)
+        self._state = np.empty((Board.SIZE, Board.SIZE), dtype=Piece)
+        self._square_colors = np.empty((Board.SIZE, Board.SIZE), dtype=Tuple[int, int, int])
         self.light_pieces: List[Piece] = []
         self.dark_pieces: List[Piece] = []
         self._build()
         self.prepare_pieces()
 
+    @property
+    def state(self):
+        return np.array(self._state, copy=True)
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
     def _build(self):
-        for i in range(Board.SIZE):
-            for j in range(Board.SIZE):
-                if (i % 2 == 0 and j % 2 == 0) or (i % 2 == 1 and j % 2 == 1):
-                    self.state[j][i] = Square(Color.LIGHT_SQUARE)
+        for y in range(Board.SIZE):
+            for x in range(Board.SIZE):
+                if (y % 2 == 0 and x % 2 == 0) or (y % 2 == 1 and x % 2 == 1):
+                    self._square_colors[y][x] = Color.LIGHT_SQUARE
                 else:
-                    self.state[j][i] = Square(Color.DARK_SQUARE)
-
-    def clear(self):
-        for row in self.state[Board.FILLED_ROWS:-Board.FILLED_ROWS]:
-            for square in row:
-                if square.is_available():
-                    square.piece = None
-
-        self.light_pieces = []
-        self.dark_pieces = []
+                    self._square_colors[y][x] = Color.DARK_SQUARE
 
     def prepare_pieces(self):
-        for row in self.state[:Board.FILLED_ROWS]:
-            for square in row:
-                if square.is_available():
-                    piece = Piece(Color.LIGHT_PIECE)
-                    square.piece = piece
-                    self.light_pieces.append(piece)
-
-        for row in self.state[-Board.FILLED_ROWS:]:
-            for square in row:
-                if square.is_available():
-                    piece = Piece(Color.DARK_PIECE)
-                    square.piece = piece
-                    self.dark_pieces.append(piece)
+        for y in range(Board.SIZE):
+            for x in range(Board.SIZE):
+                if self.is_available(x, y):
+                    if y < Board.FILLED_ROWS:
+                        piece = Piece(Color.DARK_PIECE)
+                        self._state[y][x] = piece
+                        self.dark_pieces.append(piece)
+                    if y > Board.SIZE - Board.FILLED_ROWS - 1:
+                        piece = Piece(Color.LIGHT_PIECE)
+                        self._state[y][x] = piece
+                        self.light_pieces.append(piece)
 
     def draw(self, surface):
-        for i in range(Board.SIZE):
-            for j in range(Board.SIZE):
-                self.state[i][j].draw(surface, j, i)
+        for y in range(Board.SIZE):
+            for x in range(Board.SIZE):
+                self.draw_square(surface, x, y)
+                if self.is_occupied(x, y):
+                    self._state[y][x].draw(surface, x, y)
 
-
-class Square:
-    def __init__(self, color: Tuple[int, int, int]):
-        self._color = color
-        self.piece = None
-
-    def is_occupied(self):
-        return self.piece is not None
-
-    def is_available(self):
-        return self._color is not Color.LIGHT_SQUARE
-
-    def draw(self, surface: pygame.Surface, x, y):
-        self._draw_square(surface, x, y)
-        if self.piece:
-            self.piece.draw(surface, x, y)
-
-    def _draw_square(self, surface: pygame.Surface, x, y):
+    def draw_square(self, surface, x, y):
         w = surface.get_width()
-        h = surface. get_height()
+        h = surface.get_height()
         board_size = min(w, h)
         square_size = int(board_size / Board.SIZE)
         square_rect = pygame.Rect((w - board_size) / 2 + x * square_size,
                                   (h - board_size) / 2 + y * square_size,
                                   square_size, square_size)
-        pygame.draw.rect(surface, self._color, square_rect)
 
-    def __str__(self):
-        return '{}'.format(self.piece)
+        pygame.draw.rect(surface, self._square_colors[x][y], square_rect)
+
+    def position(self, piece):
+        for y in range(Board.SIZE):
+            for x in range(Board.SIZE):
+                if self.is_occupied(x, y) and self._state[y][x] is piece:
+                    return x, y
+
+    def is_in_bounds(self, x, y):
+        return 0 < x < Board.SIZE - 1 and 0 < y < Board.SIZE - 1
+
+    def is_occupied(self, x, y):
+        return self._state[y][x] is not None
+
+    def is_available(self, x, y):
+        return self._square_colors[y][x] is not Color.LIGHT_SQUARE
 
 
 class Piece:
@@ -96,11 +93,16 @@ class Piece:
 
     def __init__(self, color: Tuple[int, int, int]):
         self._color = color
-        self._king = True
+        self._king = False
+        self._marked = False
 
     @property
     def is_king(self):
         return self._king
+
+    @property
+    def is_marked(self):
+        return self._marked
 
     def draw(self, surface: pygame.Surface, x, y):
         w = surface.get_width()
@@ -118,7 +120,10 @@ class Piece:
         )
         pygame.draw.circle(surface, self._color, piece_pos, piece_radius)
 
-        if self._color is Color.DARK_PIECE:
+
+        if self.is_marked:
+            pygame.draw.circle(surface, Color.MARKED_PIECE, piece_pos, int(piece_radius / 2), 1)
+        elif self._color is Color.DARK_PIECE:
             pygame.draw.circle(surface, Color.LIGHT_PIECE, piece_pos, int(piece_radius / 2), 1)
         elif self._color is Color.LIGHT_PIECE:
             pygame.draw.circle(surface, Color.DARK_PIECE, piece_pos, int(piece_radius / 2), 1)
@@ -129,6 +134,6 @@ class Piece:
 
     def __str__(self):
         if self._color is Color.DARK_PIECE:
-            return 'White'
+            return 'Dark'
         elif self._color is Color.LIGHT_PIECE:
-            return 'Black'
+            return 'Light'

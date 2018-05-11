@@ -7,7 +7,6 @@ import pygame
 
 
 class Color:
-
     LIGHT_PIECE = (255, 255, 255)
     DARK_PIECE = (0, 0, 0)
     MARKED_PIECE = (255, 0, 0)
@@ -26,9 +25,8 @@ class Color:
 
 
 class Board:
-
-    COLS = 10
-    ROWS = 10
+    COLS = 8
+    ROWS = 8
     FILLED_ROWS = 3
 
     def __init__(self):
@@ -64,7 +62,7 @@ class Board:
                         self._state[y][x] = piece
                         self.dark_pieces.append(piece)
                     if y > Board.ROWS - Board.FILLED_ROWS - 1:
-                        piece = Pawn(x, y, Color.LIGHT_PIECE)
+                        piece = King(x, y, Color.LIGHT_PIECE)
                         self._state[y][x] = piece
                         self.light_pieces.append(piece)
 
@@ -138,8 +136,10 @@ class Piece(ABC):
 class Pawn(Piece):
 
     def moves(self):
-        return [(self.x - 1, self.y - 1), (self.x + 1, self.y - 1),
-                (self.x - 1, self.y + 1), (self.x + 1, self.y + 1)]
+        if self._color == Color.DARK_PIECE:
+            return [(self.x - 1, self.y + 1), (self.x + 1, self.y + 1)]
+        else:
+            return [(self.x - 1, self.y - 1), (self.x + 1, self.y - 1)]
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         pygame.draw.circle(surface, self._color, piece_coordinates, piece_size)
@@ -155,11 +155,17 @@ class Pawn(Piece):
 
 
 class King(Pawn):
-
     crown_img = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
 
     def moves(self):
-        super().moves()
+        all_moves = []
+
+        for j in range(-Board.COLS, Board.COLS):
+            for i in range(-Board.COLS, Board.COLS):
+                if -1 < (self.x + 1 * i) < Board.COLS and -1 < (self.y + 1 * j) < Board.COLS and i != 0 and j != 0 and i*i == j*j:
+                    all_moves.append((self.x + 1 * i, self.y + 1 * j))
+
+        return all_moves
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         super().draw_marked(surface, piece_coordinates, piece_size)
@@ -168,4 +174,3 @@ class King(Pawn):
     def draw_unmarked(self, surface, piece_coordinates, piece_size):
         super().draw_unmarked(surface, piece_coordinates, piece_size)
         surface.blit(King.crown_img, piece_coordinates)
-

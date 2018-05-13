@@ -4,7 +4,7 @@ from time import sleep
 
 from elements import Board, Piece
 from heuristics import light_pieces_dark_pieces_difference_heuristic
-from move import Move, Forward, Beat
+from moves import Move, Forward, Beat
 
 
 class GameStrategy(ABC):
@@ -19,10 +19,23 @@ class GameStrategy(ABC):
         if piece_moves:
             for x, y in piece_moves:
                 if board.is_in_bounds(x, y) and not board.is_occupied(x, y):
-                    moves.append(Forward((piece.x, piece.y), (x, y), board))
+                    moves.append(Forward(piece, (x, y), board))
                 elif board.is_in_bounds(x, y) and board.is_occupied(x, y):
-                    moves.append(Beat((piece.x, piece.y), (x, y), board))
+                    beat = Beat(piece, (x, y), board)
+                    beat_coord = beat.get_beat_coords()
+                    if beat_coord is not None:
+                        beat.set_beat_coords(beat_coord)
+                        moves.append(beat)
         return moves
+
+
+    def get_multiple_beat_path(self, piece: Piece, board: Board, destination):
+        path = []
+        move_on = True
+        while move_on:
+            next_step = self.single_beat_is_possible(piece, board, destination)
+            if next_step is not None:
+                path.append(next_step)
 
 
 class AlphaBetaGameStrategy(GameStrategy):
@@ -62,5 +75,7 @@ class RandomGameStrategy(GameStrategy):
             return
 
         current_move = random.choice(moves)
-        current_move.execute()
-        sleep(0.05)
+        after_move = current_move.execute()
+        if after_move is not None:
+            board.state = after_move.next_state
+        sleep(0.1)

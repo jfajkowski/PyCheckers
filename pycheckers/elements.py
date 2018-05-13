@@ -62,7 +62,7 @@ class Board:
                         self._state[y][x] = piece
                         self.dark_pieces.append(piece)
                     if y > Board.ROWS - Board.FILLED_ROWS - 1:
-                        piece = King(x, y, Color.LIGHT_PIECE)
+                        piece = Pawn(x, y, Color.LIGHT_PIECE)
                         self._state[y][x] = piece
                         self.light_pieces.append(piece)
 
@@ -86,10 +86,17 @@ class Board:
         return int(surface.get_width() / Board.COLS), int(surface.get_height() / Board.ROWS)
 
     def is_in_bounds(self, x, y):
-        return 0 < x < Board.COLS - 1 and 0 < y < Board.ROWS - 1
+        # why it works better when the range is like this? In this way there is extra 1 row and 1 column.
+        return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
 
     def is_occupied(self, x, y):
         return self._state[y][x] is not None
+
+    def remove_piece(self, x, y):
+        self._state[y][x] = None
+
+    def get_piece(self, x, y):
+        return self._state[y][x]
 
 
 class Piece(ABC):
@@ -97,7 +104,7 @@ class Piece(ABC):
     def __init__(self, x, y, color: Tuple[int, int, int]):
         self.x = x
         self.y = y
-        self._color = color
+        self.color = color
         self.marked = False
 
     @abstractmethod
@@ -130,27 +137,27 @@ class Piece(ABC):
         pass
 
     def __str__(self):
-        return '{} {}'.format(Color.name(self._color), self.__class__.__name__)
+        return '{} {}'.format(Color.name(self.color), self.__class__.__name__)
 
 
 class Pawn(Piece):
 
     def moves(self):
-        if self._color == Color.DARK_PIECE:
+        if self.color == Color.DARK_PIECE:
             return [(self.x - 1, self.y + 1), (self.x + 1, self.y + 1)]
         else:
             return [(self.x - 1, self.y - 1), (self.x + 1, self.y - 1)]
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
-        pygame.draw.circle(surface, self._color, piece_coordinates, piece_size)
+        pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
         pygame.draw.circle(surface, Color.MARKED_PIECE, piece_coordinates, int(piece_size / 2), 1)
 
     def draw_unmarked(self, surface, piece_coordinates, piece_size):
-        pygame.draw.circle(surface, self._color, piece_coordinates, piece_size)
+        pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
 
-        if self._color is Color.DARK_PIECE:
+        if self.color is Color.DARK_PIECE:
             pygame.draw.circle(surface, Color.LIGHT_PIECE, piece_coordinates, int(piece_size / 2), 1)
-        elif self._color is Color.LIGHT_PIECE:
+        elif self.color is Color.LIGHT_PIECE:
             pygame.draw.circle(surface, Color.DARK_PIECE, piece_coordinates, int(piece_size / 2), 1)
 
 

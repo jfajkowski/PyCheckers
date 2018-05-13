@@ -1,4 +1,5 @@
 import pygame
+import logging
 
 from elements import Board
 from strategies import MiniMaxGameStrategy, RandomGameStrategy

@@ -1,110 +1,59 @@
 import logging
-from abc import abstractmethod
-from typing import List
+from copy import deepcopy
 
-from elements import Piece, Board
+from elements import State, Color, Pawn
+
 
 class Move:
+    '''Move from one position to another without beating'''
+    def __init__(self, state: State, piece_position, target_position):
+        self.state = deepcopy(state)
+        self.piece_position = piece_position
+        self.target_position = target_position
+        self.piece = state.get_piece(*self.piece_position)
 
-    def __init__(self, moving_piece: Piece, position_to, board: Board):
-        self.moving_piece = moving_piece
-        self.position_from = (moving_piece.x, moving_piece.y)
-        self.position_to = position_to
-        self.board = board
-        self.next_state = None
+    def is_valid(self):
+        if self.target_position in self.piece.moves():
+            if isinstance(self.piece, Pawn) and self.is_forward():
+                return True
+        return False
 
-    def set_position_from(self, position_from):
-        self.position_from = position_from
+    def is_forward(self):
+        delta_y = self.target_position[1] - self.piece_position[1]
+        if self.piece.color is Color.DARK_PIECE and delta_y > 0:
+            return True
+        elif self.piece.color is Color.LIGHT_PIECE and delta_y < 0:
+            return True
+        return False
 
-    @abstractmethod
     def execute(self):
-        pass
-
-
-class Forward(Move):
-
-    def execute(self):
-        # move from one position to another without beating
         logging.debug('Normal move')
-        self.next_state = self.board.state
-        piece = self.next_state[self.position_from[1]][self.position_from[0]]
-
-        # todo: check why piece is null sometimes
-        if piece is None:
-            return
-
-        self.next_state[self.position_from[1]][self.position_from[0]] = None
-        self.next_state[self.position_to[1]][self.position_to[0]] = piece
-        piece.x, piece.y = self.position_to
-        return self
+        self.state.remove(*self.piece_position)
+        final_position = self.target_position
+        self.state.add(final_position[0], final_position[1], self.piece)
+        return self.state
 
 
 class Beat(Move):
+    def __init__(self, state: State, piece_position, target_position):
+        super().__init__(state, piece_position, target_position)
+        self.beat_piece = self.state.get_piece(*target_position)
 
-    def __init__(self, moving_piece: Piece, position_to, board: Board):
-        super().__init__(moving_piece, position_to, board)
-        self._beat_coords = None
-
+    def is_valid(self):
+        final_position = self.calculate_final_position()
+        return self.state.is_in_bounds(*final_position) \
+               and not self.state.is_occupied(*final_position) \
+               and self.piece.color is not self.beat_piece.color
+    
     def execute(self):
-        if self._beat_coords is None:
-            raise AttributeError('beat_coords are not set')
-        # maybe create Forward object here:
-        self.next_state = self.board.state
-        piece = self.next_state[self.position_from[1]][self.position_from[0]]
+        logging.debug('Beat move')
+        piece = self.state.get_piece(*self.piece_position)
+        self.state.remove(*self.piece_position)
+        self.state.remove(*self.target_position)
+        final_position = self.calculate_final_position()
+        self.state.add(final_position[0], final_position[1], piece)
+        return self.state
 
-        # todo: check why piece is null sometimes
-        if piece is None:
-            return
-
-        self.next_state[self.position_from[1]][self.position_from[0]] = None
-        self.next_state[self.position_to[1]][self.position_to[0]] = None
-        self.next_state[self._beat_coords[1]][self._beat_coords[0]] = piece
-        piece.x, piece.y = self._beat_coords
-        return self
-
-    def get_beat_coords(self):
-        piece_to_beat = self.board.get_piece(self.position_to[0], self.position_to[1])
-        if piece_to_beat.color == self.moving_piece.color:
-            return None
-        # down, right
-        if self.moving_piece.x - self.position_to[0] < 0 and self.moving_piece.y - self.position_to[1] < 0:
-            coords = self.position_to[0] + 1, self.position_to[1] + 1
-            if self.board.is_in_bounds(coords[0], coords[1]) and not self.board.is_occupied(coords[0], coords[1]):
-                return coords
-
-        # up, right
-        elif self.moving_piece.x - self.position_to[0] < 0 < self.moving_piece.y - self.position_to[1]:
-            coords = self.position_to[0] + 1, self.position_to[1] - 1
-            if self.board.is_in_bounds(coords[0], coords[1]) and not self.board.is_occupied(coords[0], coords[1]):
-                return coords
-
-        # down, left
-        elif self.moving_piece.x - self.position_to[0] > 0 > self.moving_piece.y - self.position_to[1]:
-            coords = self.position_to[0] - 1, self.position_to[1] + 1
-            if self.board.is_in_bounds(coords[0], coords[1]) and not self.board.is_occupied(coords[0], coords[1]):
-                return coords
-
-        # up, left
-        elif self.moving_piece.x - self.position_to[0] > 0 and self.moving_piece.y - self.position_to[1] > 0:
-            coords = self.position_to[0] - 1, self.position_to[1] - 1
-            if self.board.is_in_bounds(coords[0], coords[1]) and not self.board.is_occupied(coords[0], coords[1]):
-                return coords
-
-        return None
-
-    def set_beat_coords(self, coords):
-        self._beat_coords = coords
-
-
-class MultipleBeat(Beat):
-
-    def __init__(self, moving_piece: Piece, position_to, board: Board):
-        super().__init__(moving_piece, position_to, board)
-        self._beat_coords = None
-        self.beats: List[Beat] = []
-
-    def create_beats_path(self):
-        pass
-
-    def execute(self):
-        pass
+    def calculate_final_position(self):
+        return (2 * self.target_position[0] - self.piece_position[0],
+                2 * self.target_position[1] - self.piece_position[1])

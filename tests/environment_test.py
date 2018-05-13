@@ -1,7 +1,7 @@
 import unittest
 
 
-class PyGameTestCase(unittest.TestCase):
+class PackagesTestCase(unittest.TestCase):
     def test_pygame_installation(self):
         try:
             import pygame

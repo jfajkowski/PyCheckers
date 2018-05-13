@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import Tuple, List
 
 import numpy as np
@@ -30,20 +31,17 @@ class Board:
     FILLED_ROWS = 3
 
     def __init__(self):
-        self._state = np.empty((Board.ROWS, Board.COLS), dtype=Piece)
         self._square_colors = np.empty((Board.ROWS, Board.COLS), dtype=Tuple[int, int, int])
-        self.light_pieces: List[Piece] = []
-        self.dark_pieces: List[Piece] = []
+        self._state = State(Board.ROWS, Board.COLS)
         self._build()
-        self.prepare_pieces()
 
     @property
     def state(self):
-        return np.array(self._state, copy=True)
+        return deepcopy(self._state)
 
     @state.setter
     def state(self, value):
-        self._state = value
+        self._state = deepcopy(value)
 
     def _build(self):
         for y in range(Board.COLS):
@@ -58,20 +56,18 @@ class Board:
             for x in range(Board.ROWS):
                 if self._square_colors[y][x] is not Color.LIGHT_SQUARE:
                     if y < Board.FILLED_ROWS:
-                        piece = Pawn(x, y, Color.DARK_PIECE)
-                        self._state[y][x] = piece
-                        self.dark_pieces.append(piece)
+                        piece = Pawn(Color.DARK_PIECE)
+                        self._state.add(x, y, piece)
                     if y > Board.ROWS - Board.FILLED_ROWS - 1:
-                        piece = Pawn(x, y, Color.LIGHT_PIECE)
-                        self._state[y][x] = piece
-                        self.light_pieces.append(piece)
+                        piece = Pawn(Color.LIGHT_PIECE)
+                        self._state.add(x, y, piece)
 
     def draw(self, surface):
         for y in range(Board.COLS):
             for x in range(Board.ROWS):
                 self.draw_square(surface, x, y)
-                if self.is_occupied(x, y):
-                    self._state[y][x].draw(surface)
+                if self.state.is_occupied(x, y):
+                    self.state.get_piece(x, y).draw(surface)
 
     def draw_square(self, surface, x, y):
         square_w, square_h = self.square_size(surface)
@@ -85,27 +81,86 @@ class Board:
     def square_size(surface):
         return int(surface.get_width() / Board.COLS), int(surface.get_height() / Board.ROWS)
 
-    def is_in_bounds(self, x, y):
-        # why it works better when the range is like this? In this way there is extra 1 row and 1 column.
-        return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
 
-    def is_occupied(self, x, y):
-        return self._state[y][x] is not None
+class State:
+    def __init__(self, rows, cols):
+        self.light_pieces: List[Piece] = []
+        self.dark_pieces: List[Piece] = []
+        self.state_matrix = np.empty((rows, cols), dtype=Piece)
 
-    def remove_piece(self, x, y):
-        self._state[y][x] = None
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        light_pieces = []
+        dark_pieces = []
+        state_matrix = deepcopy(self.__dict__['state_matrix'])
+        for piece in filter(lambda x: x is not None, state_matrix.flatten()):
+            if piece.color is Color.DARK_PIECE:
+                dark_pieces.append(piece)
+            elif piece.color is Color.LIGHT_PIECE:
+                light_pieces.append(piece)
+            else:
+                raise RuntimeError("Undefined color")
+        setattr(result, 'light_pieces', light_pieces)
+        setattr(result, 'dark_pieces', dark_pieces)
+        setattr(result, 'state_matrix', state_matrix)
+        return result
+
+    def add(self, x, y, piece):
+        self.state_matrix[y][x] = piece
+        if piece.color is Color.DARK_PIECE:
+            self.dark_pieces.append(piece)
+        elif piece.color is Color.LIGHT_PIECE:
+            self.light_pieces.append(piece)
+        else:
+            raise RuntimeError("Undefined color")
+        piece.x, piece.y = x, y
+
+    def remove(self, x, y):
+        piece = self.state_matrix[y][x]
+        piece.x, piece.y = None, None
+        self.state_matrix[y][x] = None
+        if piece.color is Color.DARK_PIECE:
+            self.dark_pieces.remove(piece)
+        elif piece.color is Color.LIGHT_PIECE:
+            self.light_pieces.remove(piece)
+        else:
+            raise RuntimeError("Undefined color")
 
     def get_piece(self, x, y):
-        return self._state[y][x]
+        return self.state_matrix[y][x]
+
+    def is_occupied(self, x, y):
+        return self.state_matrix[y][x] is not None
+
+    def pieces(self, color):
+        if color is Color.DARK_PIECE:
+            return self.dark_pieces
+        elif color is Color.LIGHT_PIECE:
+            return self.light_pieces
+        else:
+            raise RuntimeError("Undefined color")
+
+    def is_in_bounds(self, x, y):
+        return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
+
 
 
 class Piece(ABC):
-
-    def __init__(self, x, y, color: Tuple[int, int, int]):
-        self.x = x
-        self.y = y
+    def __init__(self, color: Tuple[int, int, int]):
+        self.x = None
+        self.y = None
         self.color = color
         self.marked = False
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v))
+        return result
 
     @abstractmethod
     def moves(self):
@@ -141,12 +196,9 @@ class Piece(ABC):
 
 
 class Pawn(Piece):
-
     def moves(self):
-        if self.color == Color.DARK_PIECE:
-            return [(self.x - 1, self.y + 1), (self.x + 1, self.y + 1)]
-        else:
-            return [(self.x - 1, self.y - 1), (self.x + 1, self.y - 1)]
+        return [(self.x - 1, self.y + 1), (self.x + 1, self.y + 1),
+                (self.x - 1, self.y - 1), (self.x + 1, self.y - 1)]
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
@@ -162,7 +214,7 @@ class Pawn(Piece):
 
 
 class King(Pawn):
-    crown_img = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
+    CROWN_IMG = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
 
     def moves(self):
         all_moves = []
@@ -176,8 +228,8 @@ class King(Pawn):
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         super().draw_marked(surface, piece_coordinates, piece_size)
-        surface.blit(King.crown_img, piece_coordinates)
+        surface.blit(King.CROWN_IMG, piece_coordinates)
 
     def draw_unmarked(self, surface, piece_coordinates, piece_size):
         super().draw_unmarked(surface, piece_coordinates, piece_size)
-        surface.blit(King.crown_img, piece_coordinates)
+        surface.blit(King.CROWN_IMG, piece_coordinates)

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Tuple, List
+from copy import deepcopy, copy
+from typing import Tuple
 
 import numpy as np
 import pkg_resources
@@ -37,11 +37,11 @@ class Board:
 
     @property
     def state(self):
-        return deepcopy(self._state)
+        return copy(self._state)
 
     @state.setter
     def state(self, value):
-        self._state = deepcopy(value)
+        self._state = copy(value)
 
     def _build(self):
         for y in range(Board.COLS):
@@ -67,7 +67,7 @@ class Board:
             for x in range(Board.ROWS):
                 self.draw_square(surface, x, y)
                 if self.state.is_occupied(x, y):
-                    self.state.get_piece(x, y).draw(surface)
+                    self.state.get_piece(x, y).draw(surface, x, y)
 
     def draw_square(self, surface, x, y):
         square_w, square_h = self.square_size(surface)
@@ -84,63 +84,50 @@ class Board:
 
 class State:
     def __init__(self, rows, cols):
-        self.light_pieces: List[Piece] = []
-        self.dark_pieces: List[Piece] = []
+        self.rows = rows
+        self.cols = cols
         self.state_matrix = np.empty((rows, cols), dtype=Piece)
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy(v))
+        return result
 
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        light_pieces = []
-        dark_pieces = []
-        state_matrix = deepcopy(self.__dict__['state_matrix'])
-        for piece in filter(lambda x: x is not None, state_matrix.flatten()):
-            if piece.color is Color.DARK_PIECE:
-                dark_pieces.append(piece)
-            elif piece.color is Color.LIGHT_PIECE:
-                light_pieces.append(piece)
-            else:
-                raise RuntimeError("Undefined color")
-        setattr(result, 'light_pieces', light_pieces)
-        setattr(result, 'dark_pieces', dark_pieces)
-        setattr(result, 'state_matrix', state_matrix)
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v))
         return result
 
     def add(self, x, y, piece):
         self.state_matrix[y][x] = piece
-        if piece.color is Color.DARK_PIECE:
-            self.dark_pieces.append(piece)
-        elif piece.color is Color.LIGHT_PIECE:
-            self.light_pieces.append(piece)
-        else:
-            raise RuntimeError("Undefined color")
-        piece.x, piece.y = x, y
 
     def remove(self, x, y):
-        piece = self.state_matrix[y][x]
-        piece.x, piece.y = None, None
         self.state_matrix[y][x] = None
-        if piece.color is Color.DARK_PIECE:
-            self.dark_pieces.remove(piece)
-        elif piece.color is Color.LIGHT_PIECE:
-            self.light_pieces.remove(piece)
-        else:
-            raise RuntimeError("Undefined color")
 
     def get_piece(self, x, y):
         return self.state_matrix[y][x]
+
+    def get_position(self, piece):
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if self.state_matrix[y][x] is piece:
+                    return x, y
 
     def is_occupied(self, x, y):
         return self.state_matrix[y][x] is not None
 
     def pieces(self, color):
-        if color is Color.DARK_PIECE:
-            return self.dark_pieces
-        elif color is Color.LIGHT_PIECE:
-            return self.light_pieces
-        else:
-            raise RuntimeError("Undefined color")
+        result = []
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if self.is_occupied(x, y) and self.get_piece(x, y).color == color:
+                    result.append(self.state_matrix[y][x])
+        return result
 
     def is_in_bounds(self, x, y):
         return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
@@ -154,23 +141,15 @@ class Piece(ABC):
         self.color = color
         self.marked = False
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v))
-        return result
-
     @abstractmethod
-    def moves(self):
+    def positions(self, state):
         pass
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface, x, y):
         square_w, square_h = Board.square_size(surface)
         square_coordinates = (
-            self.x * square_w,
-            self.y * square_h
+            x * square_w,
+            y * square_h
         )
         piece_coordinates = (
             int(square_coordinates[0] + square_w / 2),
@@ -196,9 +175,11 @@ class Piece(ABC):
 
 
 class Pawn(Piece):
-    def moves(self):
-        return [(self.x - 1, self.y + 1), (self.x + 1, self.y + 1),
-                (self.x - 1, self.y - 1), (self.x + 1, self.y - 1)]
+    def positions(self, state):
+        x, y = state.get_position(self)
+        all_moves = [(x - 1, y + 1), (x + 1, y + 1),
+                     (x - 1, y - 1), (x + 1, y - 1)]
+        return (x, y), all_moves
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
@@ -207,24 +188,24 @@ class Pawn(Piece):
     def draw_unmarked(self, surface, piece_coordinates, piece_size):
         pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
 
-        if self.color is Color.DARK_PIECE:
+        if self.color == Color.DARK_PIECE:
             pygame.draw.circle(surface, Color.LIGHT_PIECE, piece_coordinates, int(piece_size / 2), 1)
-        elif self.color is Color.LIGHT_PIECE:
+        elif self.color == Color.LIGHT_PIECE:
             pygame.draw.circle(surface, Color.DARK_PIECE, piece_coordinates, int(piece_size / 2), 1)
 
 
 class King(Pawn):
     CROWN_IMG = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
 
-    def moves(self):
+    def positions(self, state):
+        x, y = state.get_position(self)
         all_moves = []
-
         for j in range(-Board.COLS, Board.COLS):
             for i in range(-Board.COLS, Board.COLS):
-                if -1 < (self.x + 1 * i) < Board.COLS and -1 < (self.y + 1 * j) < Board.COLS and i != 0 and j != 0 and i*i == j*j:
-                    all_moves.append((self.x + 1 * i, self.y + 1 * j))
+                if -1 < (x + 1 * i) < Board.COLS and -1 < (y + 1 * j) < Board.COLS and i != 0 and j != 0 and i*i == j*j:
+                    all_moves.append((x + 1 * i, y + 1 * j))
 
-        return all_moves
+        return (x, y), all_moves
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         super().draw_marked(surface, piece_coordinates, piece_size)

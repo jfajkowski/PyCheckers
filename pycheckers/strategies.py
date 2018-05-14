@@ -16,16 +16,15 @@ class GameStrategy(ABC):
 
     def _calculate_valid_moves(self, piece: Piece, state: State):
         moves = []
-        piece_moves = piece.moves()
-        if piece_moves:
-            for x, y in piece_moves:
-                move = None
-                if state.is_in_bounds(x, y) and not state.is_occupied(x, y):
-                    move = Move(state, (piece.x, piece.y), (x, y))
-                elif state.is_in_bounds(x, y) and state.is_occupied(x, y):
-                    move = Beat(state, (piece.x, piece.y), (x, y))
-                if move and move.is_valid():
-                    moves.append(move)
+        piece_position, target_positions = piece.positions(state)
+        for target_position in target_positions:
+            move = None
+            if state.is_in_bounds(*target_position) and not state.is_occupied(*target_position):
+                move = Move(state, piece_position, target_position)
+            elif state.is_in_bounds(*target_position) and state.is_occupied(*target_position):
+                move = Beat(state, piece_position, target_position)
+            if move and move.is_valid():
+                moves.append(move)
         return moves
 
 

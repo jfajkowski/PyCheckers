@@ -1,5 +1,5 @@
 import logging
-from copy import deepcopy
+from copy import copy
 
 from elements import State, Color, Pawn
 
@@ -7,22 +7,20 @@ from elements import State, Color, Pawn
 class Move:
     '''Move from one position to another without beating'''
     def __init__(self, state: State, piece_position, target_position):
-        self.state = deepcopy(state)
+        self.state = copy(state)
         self.piece_position = piece_position
         self.target_position = target_position
         self.piece = state.get_piece(*self.piece_position)
 
     def is_valid(self):
-        if self.target_position in self.piece.moves():
-            if isinstance(self.piece, Pawn) and self.is_forward():
-                return True
-        return False
+        if isinstance(self.piece, Pawn) and self.is_forward():
+            return True
 
     def is_forward(self):
         delta_y = self.target_position[1] - self.piece_position[1]
-        if self.piece.color is Color.DARK_PIECE and delta_y > 0:
+        if self.piece.color == Color.DARK_PIECE and delta_y > 0:
             return True
-        elif self.piece.color is Color.LIGHT_PIECE and delta_y < 0:
+        elif self.piece.color == Color.LIGHT_PIECE and delta_y < 0:
             return True
         return False
 
@@ -43,7 +41,7 @@ class Beat(Move):
         final_position = self.calculate_final_position()
         return self.state.is_in_bounds(*final_position) \
                and not self.state.is_occupied(*final_position) \
-               and self.piece.color is not self.beat_piece.color
+               and self.piece.color != self.beat_piece.color
     
     def execute(self):
         logging.debug('Beat move')

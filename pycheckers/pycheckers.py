@@ -5,7 +5,7 @@ from strategies import RandomGameStrategy
 
 
 class Game:
-    def __init__(self, clock, surface: pygame.Surface, max_fps=60):
+    def __init__(self, clock, surface: pygame.Surface, max_fps=1):
         self._clock = clock
         self._surface = surface
         self._max_fps = max_fps
@@ -15,18 +15,22 @@ class Game:
 
     def run(self):
         current_player = None
+        moves = []
         self._board.prepare_pieces()
 
         while True:
-            clock.tick(self._max_fps)
             self._board.draw(self._surface)
             pygame.display.update()
-            current_player = self._player_1 if current_player is not self._player_1 else self._player_2
-            move = current_player.move(self._board.state)
-            if move:
-                self._board.state = move.execute()
+            if moves:
+                self._board.state = moves.pop().execute()
+                clock.tick(self._max_fps)
             else:
-                break
+                current_player = self._player_1 if current_player is not self._player_1 else self._player_2
+                moves = current_player.move(self._board.state)
+                if moves:
+                    moves = list(reversed(moves))
+                else:
+                    break
 
 
 if __name__ == '__main__':

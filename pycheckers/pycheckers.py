@@ -5,7 +5,7 @@ from strategies import RandomGameStrategy
 
 
 class Game:
-    def __init__(self, clock, surface: pygame.Surface, max_fps=1):
+    def __init__(self, clock, surface: pygame.Surface, max_fps=3):
         self._clock = clock
         self._surface = surface
         self._max_fps = max_fps

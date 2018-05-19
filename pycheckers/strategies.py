@@ -1,9 +1,9 @@
 import random
 from abc import ABC, abstractmethod
 
-from elements import State, Piece
+from elements import State, Piece, Pawn, King
 from heuristics import light_pieces_dark_pieces_difference_heuristic
-from moves import Move, Beat
+from moves import Move, Beat, KingsMove, KingsBeat
 
 
 class GameStrategy(ABC):
@@ -19,27 +19,34 @@ class GameStrategy(ABC):
         piece_position, target_positions = piece.positions(state)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and not state.is_occupied(*target_position):
-                move = Move(state, piece_position, target_position)
+                move = KingsMove(state, piece_position, target_position) if isinstance(piece, King) else Move(state, piece_position, target_position)
                 if move.is_valid():
                     moves.append([move])
         return moves
 
     def _calculate_valid_beats(self, piece: Piece, state: State, previous_beat: Beat = None):
-        beats = []
+        valid_beats = []
         piece_position, target_positions = piece.positions(state)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and state.is_occupied(*target_position) \
                     and state.get_piece(*target_position).color != self._color:
-                beat = Beat(state, piece_position, target_position)
-                if beat.is_valid():
-                    next_state = beat.execute()
-                    self._calculate_valid_beats(piece, next_state, beat)
-                    if previous_beat:
-                        previous_beat.next_beats.append(beat)
-                    else:
-                        beats += beat.to_list()
-        return beats
+                beats = []
+                if isinstance(piece, King):
+                    final_positions = KingsBeat.calculate_final_positions(piece_position, target_position)
+                    for final_position in final_positions:
+                        beats.append(KingsBeat(state, piece_position, target_position, final_position))
+                else:
+                    beats.append(Beat(state, piece_position, target_position))
 
+                for beat in beats:
+                    if beat.is_valid():
+                        next_state = beat.execute()
+                        self._calculate_valid_beats(piece, next_state, beat)
+                        if previous_beat:
+                            previous_beat.next_beats.append(beat)
+                        else:
+                            valid_beats += beat.to_list()
+        return valid_beats
 
 
 class AlphaBetaGameStrategy(GameStrategy):

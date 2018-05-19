@@ -59,7 +59,7 @@ class Board:
                         piece = Pawn(Color.DARK_PIECE)
                         self._state.add(x, y, piece)
                     if y > Board.ROWS - Board.FILLED_ROWS - 1:
-                        piece = Pawn(Color.LIGHT_PIECE)
+                        piece = King(Color.LIGHT_PIECE)
                         self._state.add(x, y, piece)
 
     def draw(self, surface):
@@ -132,6 +132,13 @@ class State:
     def is_in_bounds(self, x, y):
         return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
 
+    def transform_into_king(self, piece):
+        self.remove(piece.x, piece.y)
+        king = King(piece.color)
+        king.x = piece.x
+        king.y = piece.y
+        self.add(piece.x, piece.y, king)
+        return king
 
 
 class Piece(ABC):

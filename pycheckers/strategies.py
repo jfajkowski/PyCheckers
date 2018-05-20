@@ -1,7 +1,9 @@
+import math
 import random
 from abc import ABC, abstractmethod
+from typing import Tuple
 
-from elements import State, Piece, Pawn, King
+from elements import State, Piece, Pawn, King, Color
 from heuristics import light_pieces_dark_pieces_difference_heuristic
 from moves import Move, Beat, KingsMove, KingsBeat
 
@@ -13,6 +15,21 @@ class GameStrategy(ABC):
     @abstractmethod
     def move(self, state: State):
         pass
+
+    def _calculate_all_moves(self, state: State, color: Tuple[int, int, int]):
+        beats = []
+        for piece in state.pieces(color):
+            beats += self._calculate_valid_beats(piece, state)
+
+        if beats:
+            return beats
+
+        moves = []
+        for piece in state.pieces(color):
+            moves += self._calculate_valid_moves(piece, state)
+
+        if moves:
+            return moves
 
     def _calculate_valid_moves(self, piece: Piece, state: State):
         moves = []
@@ -29,7 +46,7 @@ class GameStrategy(ABC):
         piece_position, target_positions = piece.positions(state)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and state.is_occupied(*target_position) \
-                    and state.get_piece(*target_position).color != self._color:
+                    and state.get_piece(*target_position).color != piece.color:
                 beats = []
                 if isinstance(piece, King):
                     final_positions = KingsBeat.calculate_final_positions(piece_position, target_position)
@@ -50,7 +67,6 @@ class GameStrategy(ABC):
 
 
 class AlphaBetaGameStrategy(GameStrategy):
-
     def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=3):
         super().__init__(color)
         self.heuristic = heuristic
@@ -65,14 +81,39 @@ class ManualGameStrategy(GameStrategy):
         pass
 
 
-class MiniMaxGameStrategy(GameStrategy):
+class MinMaxGameStrategy(GameStrategy):
     def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=3):
         super().__init__(color)
-        self.heuristic = heuristic
-        self.depth = depth
+        self._heuristic = heuristic
+        self._depth = depth
 
     def move(self, state: State):
-        pass
+        best_move, best_value = None, -math.inf
+        for move in self._calculate_all_moves(state, self._color):
+            next_state = move[-1].execute()
+            value = self.min_max(next_state, Color.opposite(self._color), self._depth - 1)
+            if value > best_value:
+                best_move, best_value = move, value
+        return best_move
+
+    def min_max(self, state: State, color: Tuple[int, int, int], depth: int):
+        if depth == 0:
+            return self._heuristic(state)
+
+        if color == self._color:
+            best_value = -math.inf
+            for move in self._calculate_all_moves(state, color):
+                next_state = move[-1].execute()
+                value = self.min_max(next_state, Color.opposite(color), depth - 1)
+                best_value = max(best_value, value)
+            return best_value
+        else:
+            best_value = math.inf
+            for move in self._calculate_all_moves(state, color):
+                next_state = move[-1].execute()
+                value = self.min_max(next_state, Color.opposite(color), depth - 1)
+                best_value = min(best_value, value)
+            return best_value
 
 
 class RandomGameStrategy(GameStrategy):

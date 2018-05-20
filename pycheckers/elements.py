@@ -17,12 +17,16 @@ class Color:
     @staticmethod
     def name(color: Tuple[int, int, int]):
         if color == Color.LIGHT_PIECE:
-            color_name = 'White'
+            return 'White'
         elif color == Color.DARK_PIECE:
-            color_name = 'Black'
-        else:
-            color_name = 'Undefined'
-        return color_name
+            return 'Black'
+
+    @staticmethod
+    def opposite(color: Tuple[int, int, int]):
+        if color == Color.LIGHT_PIECE:
+            return Color.DARK_PIECE
+        elif color == Color.DARK_PIECE:
+            return Color.LIGHT_PIECE
 
 
 class Board:
@@ -59,7 +63,7 @@ class Board:
                         piece = Pawn(Color.DARK_PIECE)
                         self._state.add(x, y, piece)
                     if y > Board.ROWS - Board.FILLED_ROWS - 1:
-                        piece = King(Color.LIGHT_PIECE)
+                        piece = Pawn(Color.LIGHT_PIECE)
                         self._state.add(x, y, piece)
 
     def draw(self, surface):
@@ -130,7 +134,7 @@ class State:
         return result
 
     def is_in_bounds(self, x, y):
-        return 0 <= x < Board.COLS and 0 <= y < Board.ROWS
+        return 0 <= x < self.cols and 0 <= y < self.rows
 
     def transform_into_king(self, piece):
         self.remove(piece.x, piece.y)

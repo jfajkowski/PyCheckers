@@ -1,7 +1,7 @@
 import unittest
 
-from elements import State, Pawn, Color
-from moves import Move, Beat
+from elements import State, Pawn, Color, King
+from moves import Move, Beat, KingsMove, KingsBeat
 
 
 class PawnMovesTestCase(unittest.TestCase):
@@ -120,7 +120,7 @@ class PawnMovesTestCase(unittest.TestCase):
         ignored_position_1 = (1, 3)
         ignored_position_2 = (3, 1)
         final_position_1 = (2, 2)
-        final_position_2 = (5, 5)
+        final_position_2 = (4, 4)
 
         state = State(5, 5)
         state.add(piece_position[0], piece_position[1], Pawn(piece_color))
@@ -150,6 +150,52 @@ class PawnMovesTestCase(unittest.TestCase):
         self.assertTrue(next_state_2.get_piece(*ignored_position_1))
         self.assertTrue(next_state_2.get_piece(*ignored_position_2))
         self.assertTrue(next_state_2.get_piece(*final_position_2))
+
+
+class KingMovesTestCase(unittest.TestCase):
+    def test_king_move(self):
+        # given
+        size = 5
+        piece_position = (int(size / 2), int(size / 2))
+        target_positions_diagonal_1 = [(x, x) for x in range(size)]
+        target_positions_diagonal_2 = [(size - 1 - x, x) for x in range(size)]
+        target_positions_vertical = [(x, int(size / 2)) for x in range(size)]
+        target_positions_horizontal = [(int(size / 2), x) for x in range(size)]
+        target_positions = target_positions_diagonal_1 + target_positions_diagonal_2 + \
+                           target_positions_horizontal + target_positions_vertical
+
+        for target_position in filter(lambda t: t != piece_position, target_positions):
+            state = State(size, size)
+            state.add(piece_position[0], piece_position[1], King(Color.DARK_PIECE))
+            move = KingsMove(state, piece_position, target_position)
+
+            # when
+            next_state = move.execute()
+
+            # then
+            self.assertFalse(next_state.get_piece(*piece_position))
+            self.assertTrue(next_state.get_piece(*target_position))
+
+    def test_king_beat(self):
+        # given
+        size = 5
+        piece_position = (0, 0)
+        target_position = (2, 2)
+        final_positions = [(x, x) for x in range(3, size)]
+
+        for final_position in final_positions:
+            state = State(size, size)
+            state.add(piece_position[0], piece_position[1], King(Color.DARK_PIECE))
+            state.add(target_position[0], target_position[1], Pawn(Color.LIGHT_PIECE))
+            beat = KingsBeat(state, piece_position, target_position, final_position)
+
+            # when
+            next_state = beat.execute()
+
+            # then
+            self.assertFalse(next_state.get_piece(*piece_position))
+            self.assertFalse(next_state.get_piece(*target_position))
+            self.assertTrue(next_state.get_piece(*final_position))
 
 
 if __name__ == '__main__':

@@ -82,13 +82,12 @@ class AlphaBetaGameStrategy(GameStrategy):
 
     def move(self, state: State):
         # alpha for maximizer, beta for minimizer
-        alpha, beta = math.inf, -math.inf
+        alpha, beta = -math.inf, math.inf
         best_move, best_value = None, -math.inf
 
         for move in self._calculate_all_moves(state, self._color):
             initial_state = move[-1].execute()
             value = self.alpha_beta(initial_state, Color.opposite(self._color), alpha, beta, self._depth)
-            # alpha = alpha if alpha > value else value
             if value > best_value:
                 best_value, best_move = value, move
         return best_move
@@ -100,23 +99,19 @@ class AlphaBetaGameStrategy(GameStrategy):
             return heuristic
 
         if color == self._color:
-            value = -math.inf
             for move in self._calculate_all_moves(state, color):
                 next_state = move[-1].execute()
-                value = max(value, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
-                alpha = max(alpha, value)
+                alpha = max(alpha, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
                 if beta <= alpha:
-                    break
-            return value
+                    return beta
+            return alpha
         else:
-            value = math.inf
             for move in self._calculate_all_moves(state, color):
                 next_state = move[-1].execute()
-                value = min(value, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
-                beta = min(beta, value)
+                beta = min(beta, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
                 if beta <= alpha:
-                    break
-            return value
+                    return alpha
+            return beta
 
 
 class ManualGameStrategy(GameStrategy):

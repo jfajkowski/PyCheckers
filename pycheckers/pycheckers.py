@@ -12,7 +12,8 @@ class Game:
         self._max_fps = max_fps
         self._board = Board()
         self._player_1 = AlphaBetaGameStrategy(Color.LIGHT_PIECE, light_pieces_maximizing_heuristic, 5)
-        self._player_2 = AlphaBetaGameStrategy(Color.DARK_PIECE, dark_pieces_maximizing_heuristic, 10)
+        self._player_2 = MinMaxGameStrategy(Color.DARK_PIECE, dark_pieces_maximizing_heuristic, 4)
+        # self._player_2 = RandomGameStrategy(Color.DARK_PIECE)
 
     def run(self):
         current_player = None

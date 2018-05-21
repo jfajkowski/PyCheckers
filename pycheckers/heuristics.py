@@ -11,11 +11,11 @@ def dark_pieces_light_pieces_difference_heuristic(state: State):
 
 
 def light_pieces_maximizing_heuristic(state: State):
-    return light_pieces_dark_pieces_difference_heuristic(state) + distance_to_last_position(state, Color.LIGHT_PIECE)
+    return 10 * light_pieces_dark_pieces_difference_heuristic(state) + distance_to_last_position(state, Color.LIGHT_PIECE)
 
 
 def dark_pieces_maximizing_heuristic(state: State):
-    return dark_pieces_light_pieces_difference_heuristic(state) + distance_to_last_position(state, Color.DARK_PIECE)
+    return 10 * dark_pieces_light_pieces_difference_heuristic(state) + distance_to_last_position(state, Color.DARK_PIECE)
 
 
 def distance_to_last_position(state: State, color: Tuple[int, int, int]):

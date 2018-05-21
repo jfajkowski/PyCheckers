@@ -1,9 +1,10 @@
 import math
 import random
+import pygame
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-from elements import State, Piece, Pawn, King, Color
+from elements import State, Piece, Pawn, King, Color, Board
 from heuristics import light_pieces_dark_pieces_difference_heuristic
 from moves import Move, Beat, KingsMove, KingsBeat
 
@@ -116,7 +117,48 @@ class AlphaBetaGameStrategy(GameStrategy):
 
 class ManualGameStrategy(GameStrategy):
     def move(self, state: State):
-        pass
+
+        beats = []
+        for piece in state.pieces(self._color):
+            beats += self._calculate_valid_beats(piece, state)
+        moves = []
+        for piece in state.pieces(self._color):
+            moves += self._calculate_valid_moves(piece, state)
+
+        while True:
+            click_up = None
+            click_down = None
+            move_clicked = False
+
+            while not move_clicked:
+                ev = pygame.event.get()
+
+                for event in ev:
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        x, y = pygame.mouse.get_pos()
+                        x = int(x / (500 / Board.ROWS))  # board width
+                        y = int(y / (500 / Board.COLS))  # board height
+                        click_up = (x, y)
+                        move_clicked = True
+
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        x, y = pygame.mouse.get_pos()
+                        x = int(x / (500 / Board.ROWS))
+                        y = int(y / (500 / Board.COLS))
+                        click_down = (x, y)
+
+            if click_up == click_down:
+                continue
+
+            if beats:
+                for b in beats:
+                    if b[0].piece_position == click_down and b[0].final_position == click_up:
+                        return b
+
+            if moves and not beats:
+                for m in moves:
+                    if m[0].piece_position == click_down and m[0].target_position == click_up:
+                        return m
 
 
 class MinMaxGameStrategy(GameStrategy):

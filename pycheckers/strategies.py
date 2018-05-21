@@ -32,6 +32,8 @@ class GameStrategy(ABC):
         if moves:
             return moves
 
+        return []
+
     def _calculate_valid_moves(self, piece: Piece, state: State):
         moves = []
         piece_position, target_positions = piece.positions(state)
@@ -71,7 +73,7 @@ class GameStrategy(ABC):
 
 
 class AlphaBetaGameStrategy(GameStrategy):
-    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=15):
+    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=25):
         super().__init__(color)
         self._heuristic = heuristic
         self._depth = depth

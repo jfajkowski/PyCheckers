@@ -1,17 +1,17 @@
 import pygame
 
 from elements import Board, Color
-from strategies import RandomGameStrategy
+from strategies import RandomGameStrategy, MinMaxGameStrategy, AlphaBetaGameStrategy
 
 
 class Game:
-    def __init__(self, clock, surface: pygame.Surface, max_fps=3):
+    def __init__(self, clock, surface: pygame.Surface, max_fps=5):
         self._clock = clock
         self._surface = surface
         self._max_fps = max_fps
         self._board = Board()
-        self._player_1 = RandomGameStrategy(Color.LIGHT_PIECE)
-        self._player_2 = RandomGameStrategy(Color.DARK_PIECE)
+        self._player_1 = AlphaBetaGameStrategy(Color.LIGHT_PIECE)
+        self._player_2 = MinMaxGameStrategy(Color.DARK_PIECE)
 
     def run(self):
         current_player = None
@@ -28,7 +28,8 @@ class Game:
                 current_player = self._player_1 if current_player is not self._player_1 else self._player_2
                 moves = current_player.move(self._board.state)
                 if moves:
-                    moves = list(reversed(moves))
+                    if len(moves) > 0:
+                        moves = list(reversed(moves))
                 else:
                     break
 

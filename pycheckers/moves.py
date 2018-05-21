@@ -36,13 +36,13 @@ class Move:
         next_state = self.state
         next_state.remove(*self.piece_position)
         final_position = self.target_position
-        if self.is_on_last_position():
-            self.piece = self.state.transform_into_king(self.piece)
+        # if self.is_on_last_position():
+        #     self.piece = self.state.transform_into_king(self.piece)
         next_state.add(final_position[0], final_position[1], self.piece)
         return next_state
 
     def is_on_last_position(self):
-        if self.piece.color == Color.DARK_PIECE and self.piece_position[1] == Board.COLS:
+        if self.piece.color == Color.DARK_PIECE and self.piece_position[1] == Board.COLS - 1:
             return True
         elif self.piece.color == Color.LIGHT_PIECE and self.piece_position[1] == 0:
             return True
@@ -79,9 +79,7 @@ class Move:
                     # fields between attacking piece and the aim (including the aim position or not)
                     if i * i == j * j and j < param and i < param:
                         if sign_x * (x + sign_x * i) > sign_x * start_position[0] \
-                                and sign_y * (y + sign_y * j) > sign_y * start_position[1] \
-                                and (x + sign_x * i) != start_position[0] \
-                                and (y + sign_y * j) != start_position[1]:
+                                and sign_y * (y + sign_y * j) > sign_y * start_position[1]:
                             if self.state.is_occupied((x + sign_x * i), (y + sign_y * j)):
                                 return False
         return True
@@ -106,6 +104,8 @@ class Beat(Move):
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
         final_position = self.calculate_final_position()
+        # if self.is_on_last_position():
+        #     piece = self.state.transform_into_king(piece)
         next_state.add(final_position[0], final_position[1], piece)
         return next_state
 
@@ -129,11 +129,6 @@ class Beat(Move):
             return sequences
 
 
-def calculate_positions_between(piece_position, target_position):
-    positions = []
-    return positions
-
-
 class KingsMove(Move):
     # valid is only when there is no pieces on the path
     def is_valid(self):
@@ -149,6 +144,7 @@ class KingsBeat(Beat):
         self.next_beats = []
         self.final_position = final_position
 
+    # valid when there is no piece on the path between attacking piece and the aim and between aim and the final position (including it).
     def is_valid(self):
         if self.piece.color != self.beat_piece.color:
             if self.is_path_empty(self.piece_position, self.target_position, False) \

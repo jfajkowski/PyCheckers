@@ -43,6 +43,9 @@ class GameStrategy(ABC):
 
     def _calculate_valid_beats(self, piece: Piece, state: State, previous_beat: Beat = None):
         valid_beats = []
+        if piece is None:
+            return valid_beats
+
         piece_position, target_positions = piece.positions(state)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and state.is_occupied(*target_position) \
@@ -58,7 +61,7 @@ class GameStrategy(ABC):
                 for beat in beats:
                     if beat.is_valid():
                         next_state = beat.execute()
-                        self._calculate_valid_beats(piece, next_state, beat)
+                        valid_beats += self._calculate_valid_beats(piece, next_state, beat)
                         if previous_beat:
                             previous_beat.next_beats.append(beat)
                         else:
@@ -67,13 +70,48 @@ class GameStrategy(ABC):
 
 
 class AlphaBetaGameStrategy(GameStrategy):
-    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=3):
+    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=15):
         super().__init__(color)
-        self.heuristic = heuristic
-        self.depth = depth
+        self._heuristic = heuristic
+        self._depth = depth
 
     def move(self, state: State):
-        pass
+        # alpha for maximizer, beta for minimizer
+        alpha, beta = math.inf, -math.inf
+        best_move, best_value = None, -math.inf
+
+        for move in self._calculate_all_moves(state, self._color):
+            initial_state = move[-1].execute()
+            value = self.alpha_beta(initial_state, Color.opposite(self._color), alpha, beta, self._depth)
+            # alpha = alpha if alpha > value else value
+            if value > best_value:
+                best_value, best_move = value, move
+        return best_move
+
+    def alpha_beta(self, state, color: Tuple[int, int, int], alpha, beta, depth):
+        if depth == 0:
+            heuristic = self._heuristic(state)
+            print(heuristic)
+            return heuristic
+
+        if color == self._color:
+            value = -math.inf
+            for move in self._calculate_all_moves(state, color):
+                next_state = move[-1].execute()
+                value = max(value, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
+                alpha = max(alpha, value)
+                if beta <= alpha:
+                    break
+            return value
+        else:
+            value = math.inf
+            for move in self._calculate_all_moves(state, color):
+                next_state = move[-1].execute()
+                value = min(value, self.alpha_beta(next_state, Color.opposite(color), alpha, beta, depth - 1))
+                beta = min(beta, value)
+                if beta <= alpha:
+                    break
+            return value
 
 
 class ManualGameStrategy(GameStrategy):

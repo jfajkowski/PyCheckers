@@ -39,7 +39,9 @@ class GameStrategy(ABC):
         piece_position, target_positions = piece.positions(state)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and not state.is_occupied(*target_position):
-                move = KingsMove(state, piece_position, target_position) if isinstance(piece, King) else Move(state, piece_position, target_position)
+                move = KingsMove(state, piece_position, target_position) if isinstance(piece, King) else Move(state,
+                                                                                                              piece_position,
+                                                                                                              target_position)
                 if move.is_valid():
                     moves.append([move])
         return moves
@@ -73,7 +75,7 @@ class GameStrategy(ABC):
 
 
 class AlphaBetaGameStrategy(GameStrategy):
-    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=25):
+    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=10):
         super().__init__(color)
         self._heuristic = heuristic
         self._depth = depth
@@ -164,7 +166,7 @@ class ManualGameStrategy(GameStrategy):
 
 
 class MinMaxGameStrategy(GameStrategy):
-    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=3):
+    def __init__(self, color, heuristic=light_pieces_dark_pieces_difference_heuristic, depth=4):
         super().__init__(color)
         self._heuristic = heuristic
         self._depth = depth

@@ -2,6 +2,7 @@ import pygame
 
 from elements import Board, Color
 from strategies import RandomGameStrategy, MinMaxGameStrategy, AlphaBetaGameStrategy
+from heuristics import light_pieces_dark_pieces_difference_heuristic, dark_pieces_light_pieces_difference_heuristic, light_pieces_maximizing_heuristic, dark_pieces_maximizing_heuristic
 
 
 class Game:
@@ -10,8 +11,8 @@ class Game:
         self._surface = surface
         self._max_fps = max_fps
         self._board = Board()
-        self._player_1 = AlphaBetaGameStrategy(Color.LIGHT_PIECE)
-        self._player_2 = MinMaxGameStrategy(Color.DARK_PIECE)
+        self._player_1 = AlphaBetaGameStrategy(Color.LIGHT_PIECE, light_pieces_maximizing_heuristic, 5)
+        self._player_2 = AlphaBetaGameStrategy(Color.DARK_PIECE, dark_pieces_maximizing_heuristic, 10)
 
     def run(self):
         current_player = None

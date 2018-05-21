@@ -92,6 +92,7 @@ class Beat(Move):
         super().__init__(state, piece_position, target_position)
         self.beat_piece = self.state.get_piece(*target_position)
         self.next_beats = []
+        self.final_position = self.calculate_final_position()
 
     def is_valid(self):
         final_position = self.calculate_final_position()

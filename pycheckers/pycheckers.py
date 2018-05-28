@@ -1,19 +1,17 @@
 import pygame
 
 from elements import Board, Color
-from strategies import RandomGameStrategy, MinMaxGameStrategy, AlphaBetaGameStrategy
-from heuristics import light_pieces_dark_pieces_difference_heuristic, dark_pieces_light_pieces_difference_heuristic, light_pieces_maximizing_heuristic, dark_pieces_maximizing_heuristic
+from config_read import read_players
 
 
 class Game:
-    def __init__(self, clock, surface: pygame.Surface, max_fps=5):
+    def __init__(self, clock, surface: pygame.Surface, player1, player2, max_fps=5):
         self._clock = clock
         self._surface = surface
         self._max_fps = max_fps
         self._board = Board()
-        self._player_1 = AlphaBetaGameStrategy(Color.LIGHT_PIECE, light_pieces_maximizing_heuristic, 5)
-        self._player_2 = MinMaxGameStrategy(Color.DARK_PIECE, dark_pieces_maximizing_heuristic, 4)
-        # self._player_2 = RandomGameStrategy(Color.DARK_PIECE)
+        self._player_1 = player1
+        self._player_2 = player2
 
     def run(self):
         current_player = None
@@ -39,12 +37,13 @@ class Game:
 if __name__ == '__main__':
     pygame.init()
 
+    players = read_players()
     clock = pygame.time.Clock()
     resolution = (500, 500)
     screen = pygame.display.set_mode(resolution, pygame.HWSURFACE | pygame.DOUBLEBUF)
     pygame.display.set_caption('PyCheckers')
 
-    game = Game(clock, screen)
+    game = Game(clock, screen, players[0], players[1])
     game.run()
 
     pygame.quit()

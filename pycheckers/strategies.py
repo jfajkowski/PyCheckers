@@ -66,11 +66,16 @@ class GameStrategy(ABC):
                 for beat in beats:
                     if beat.is_valid():
                         next_state = beat.execute()
-                        valid_beats += self._calculate_valid_beats(piece, next_state, beat)
-                        if previous_beat:
-                            previous_beat.next_beats.append(beat)
-                        else:
+                        piece = next_state.get_piece(*beat.final_position)
+
+                        if isinstance(piece, King):
                             valid_beats += beat.to_list()
+                        else:
+                            valid_beats += self._calculate_valid_beats(piece, next_state, beat)
+                            if previous_beat:
+                                previous_beat.next_beats.append(beat)
+                            else:
+                                valid_beats += beat.to_list()
         return valid_beats
 
 
@@ -95,7 +100,6 @@ class AlphaBetaGameStrategy(GameStrategy):
     def alpha_beta(self, state, color: Tuple[int, int, int], alpha, beta, depth):
         if depth == 0:
             heuristic = self._heuristic(state)
-            print(heuristic)
             return heuristic
 
         if color == self._color:

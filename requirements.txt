@@ -2,4 +2,4 @@ numpy
 pygame
 sphinx
 sphinx_rtd_theme
-yaml
+PyYAML

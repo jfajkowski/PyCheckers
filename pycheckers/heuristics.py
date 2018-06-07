@@ -29,5 +29,4 @@ def distance_to_last_position(state: State, color: Tuple[int, int, int]):
         for piece in state.pieces(color):
             if piece:
                 value += state.get_position(piece)[1]
-    print('value: ', value)
     return value

@@ -32,19 +32,18 @@ class Move:
         return False
 
     def execute(self):
-        logging.debug('Normal move')
         next_state = self.state
         next_state.remove(*self.piece_position)
         final_position = self.target_position
-        # if self.is_on_last_position():
-        #     self.piece = self.state.transform_into_king(self.piece)
         next_state.add(final_position[0], final_position[1], self.piece)
+        if isinstance(self.piece, Pawn) and self.is_on_last_position(final_position):
+            next_state.transform_into_king(self.piece)
         return next_state
 
-    def is_on_last_position(self):
-        if self.piece.color == Color.DARK_PIECE and self.piece_position[1] == Board.COLS - 1:
+    def is_on_last_position(self, piece_position):
+        if self.piece.color == Color.DARK_PIECE and piece_position[1] == self._state.rows - 1:
             return True
-        elif self.piece.color == Color.LIGHT_PIECE and self.piece_position[1] == 0:
+        elif self.piece.color == Color.LIGHT_PIECE and piece_position[1] == 0:
             return True
         return False
 
@@ -99,15 +98,14 @@ class Beat(Move):
                and self.piece.color != self.beat_piece.color
 
     def execute(self):
-        logging.debug('Beat move')
         next_state = self.state
         piece = next_state.get_piece(*self.piece_position)
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
         final_position = self.calculate_final_position()
-        # if self.is_on_last_position():
-        #     piece = self.state.transform_into_king(piece)
         next_state.add(final_position[0], final_position[1], piece)
+        if isinstance(piece, Pawn) and self.is_on_last_position(final_position):
+            next_state.transform_into_king(piece)
         return next_state
 
     # can be replaced by calculate_final_positions() method. Then final pos should be set in constructor, or setter method.
@@ -155,7 +153,6 @@ class KingsBeat(Beat):
         return False
 
     def execute(self):
-        logging.debug('Beat move')
         next_state = self.state
         piece = next_state.get_piece(*self.piece_position)
         next_state.remove(*self.piece_position)

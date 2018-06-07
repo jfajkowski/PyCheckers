@@ -137,18 +137,14 @@ class State:
         return 0 <= x < self.cols and 0 <= y < self.rows
 
     def transform_into_king(self, piece):
-        self.remove(piece.x, piece.y)
+        piece_position = self.get_position(piece)
         king = King(piece.color)
-        king.x = piece.x
-        king.y = piece.y
-        self.add(piece.x, piece.y, king)
+        self.add(piece_position[0], piece_position[1], king)
         return king
 
 
 class Piece(ABC):
     def __init__(self, color: Tuple[int, int, int]):
-        self.x = None
-        self.y = None
         self.color = color
         self.marked = False
 

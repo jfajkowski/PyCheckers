@@ -1,7 +1,11 @@
+import logging
+
 import pygame
 
 from elements import Board, Color
 from config_read import read_players
+
+
 
 
 class Game:
@@ -35,6 +39,8 @@ class Game:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(name)s: %(message)s', level=logging.DEBUG)
+
     pygame.init()
 
     players = read_players()

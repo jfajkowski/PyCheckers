@@ -2,10 +2,10 @@
 #heuristics: dark_pieces_maximizing, light_pieces_maximizing, dark_pieces_light_pieces_difference, light_pieces_dark_pieces_difference
 
 dark_player:
-    strategy: alpha_beta
+    strategy: random
     heuristic: dark_pieces_maximizing
     depth: 5
 light_player:
-    strategy: alpha_beta
+    strategy: random
     heuristic: light_pieces_maximizing
     depth: 5

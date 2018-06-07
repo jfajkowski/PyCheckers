@@ -9,7 +9,7 @@ from config_read import read_players
 
 
 class Game:
-    def __init__(self, clock, surface: pygame.Surface, player1, player2, max_fps=5):
+    def __init__(self, clock, surface: pygame.Surface, player1, player2, max_fps=1):
         self._clock = clock
         self._surface = surface
         self._max_fps = max_fps
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     players = read_players()
     clock = pygame.time.Clock()
-    resolution = (500, 500)
+    resolution = (640, 640)
     screen = pygame.display.set_mode(resolution, pygame.HWSURFACE | pygame.DOUBLEBUF)
     pygame.display.set_caption('PyCheckers')
 

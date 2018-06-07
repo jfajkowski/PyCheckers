@@ -66,9 +66,9 @@ class GameStrategy(ABC):
                 for beat in beats:
                     if beat.is_valid():
                         next_state = beat.execute()
-                        piece = next_state.get_piece(*beat.final_position)
+                        next_piece = next_state.get_piece(*beat.final_position)
 
-                        if isinstance(piece, King):
+                        if isinstance(piece, Pawn) and isinstance(next_piece, King):
                             valid_beats += beat.to_list()
                         else:
                             valid_beats += self._calculate_valid_beats(piece, next_state, beat)

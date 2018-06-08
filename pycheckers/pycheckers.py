@@ -26,7 +26,9 @@ class Game:
             self._board.draw(self._surface)
             pygame.display.update()
             if moves:
-                self._board.state = moves.pop().execute()
+                move = moves.pop()
+                logging.debug('Player: {}, Move: {}'.format(Color.name(current_player.color), move))
+                self._board.state = move.execute()
                 clock.tick(self._max_fps)
             else:
                 current_player = self._player_1 if current_player is not self._player_1 else self._player_2

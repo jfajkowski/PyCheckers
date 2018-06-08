@@ -5,7 +5,7 @@ from copy import copy
 from elements import State, Color, Pawn, King, Board
 
 
-class Move:
+class PawnMove:
     '''Move from one position to another without beating'''
 
     def __init__(self, state: State, piece_position, target_position):
@@ -19,7 +19,7 @@ class Move:
         return copy(self._state)
 
     def is_valid(self):
-        if isinstance(self.piece, Pawn) and self.is_forward():
+        if self.is_forward():
             return True
         return False
 
@@ -83,12 +83,18 @@ class Move:
                                 return False
         return True
 
+    def __str__(self):
+        return '[{}] ({},{}) -> ({},{})'.format(self.__class__.__name__,
+                                                self.piece_position[0], self.piece_position[1],
+                                                self.target_position[0], self.target_position[1])
 
-class Beat(Move):
+
+class PawnBeat(PawnMove):
     def __init__(self, state: State, piece_position, target_position):
         super().__init__(state, piece_position, target_position)
         self.beat_piece = self.state.get_piece(*target_position)
         self.next_beats = []
+        self.previous_beat = None
         self.final_position = self.calculate_final_position()
 
     def is_valid(self):
@@ -102,7 +108,7 @@ class Beat(Move):
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
         next_state.add(self.final_position[0], self.final_position[1], self.piece)
-        if self.is_on_last_position(self.final_position):
+        if not (self.previous_beat and self.next_beats) and self.is_on_last_position(self.final_position):
             next_state.transform_into_king(*self.final_position)
         return next_state
 
@@ -121,17 +127,21 @@ class Beat(Move):
         else:
             sequences = []
             for next_beat in beat.next_beats:
-                for sequence in Beat.unfold(next_beat):
+                for sequence in PawnBeat.unfold(next_beat):
                     sequences.append([beat] + sequence)
             return sequences
 
+    def __str__(self):
+        return '[{}] ({},{}) -> ({},{}) -> ({},{})'.format(self.__class__.__name__,
+                                                           self.piece_position[0], self.piece_position[1],
+                                                           self.target_position[0], self.target_position[1],
+                                                           self.final_position[0], self.final_position[1])
 
-class KingsMove(Move):
+
+class KingMove(PawnMove):
     # valid is only when there is no pieces on the path
     def is_valid(self):
-        if isinstance(self.piece, King):
-            return self.is_path_empty(self.piece_position, self.target_position, True)
-        return False
+        return self.is_path_empty(self.piece_position, self.target_position, True)
 
     def execute(self):
         next_state = self.state
@@ -141,7 +151,7 @@ class KingsMove(Move):
         return next_state
 
 
-class KingsBeat(Beat):
+class KingBeat(PawnBeat):
     def __init__(self, state: State, piece_position, target_position, final_position):
         super().__init__(state, piece_position, target_position)
         self.beat_piece = self.state.get_piece(*target_position)

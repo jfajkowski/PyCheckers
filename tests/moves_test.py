@@ -1,7 +1,7 @@
 import unittest
 
 from elements import State, Pawn, Color, King
-from moves import Move, Beat, KingsMove, KingsBeat
+from moves import PawnMove, PawnBeat, KingMove, KingBeat
 
 
 class PawnMovesTestCase(unittest.TestCase):
@@ -11,7 +11,7 @@ class PawnMovesTestCase(unittest.TestCase):
             # given
             state = State(5, 5)
             state.add(piece_position[0], piece_position[1], Pawn(Color.LIGHT_PIECE))
-            move = Move(state, piece_position, target_position)
+            move = PawnMove(state, piece_position, target_position)
 
             # when
             next_state = move.execute()
@@ -28,7 +28,7 @@ class PawnMovesTestCase(unittest.TestCase):
             # given
             state = State(5, 5)
             state.add(piece_position[0], piece_position[1], Pawn(Color.LIGHT_PIECE))
-            move = Move(state, piece_position, target_position)
+            move = PawnMove(state, piece_position, target_position)
 
             # when
 
@@ -41,7 +41,7 @@ class PawnMovesTestCase(unittest.TestCase):
             # given
             state = State(5, 5)
             state.add(piece_position[0], piece_position[1], Pawn(Color.DARK_PIECE))
-            move = Move(state, piece_position, target_position)
+            move = PawnMove(state, piece_position, target_position)
 
             # when
             next_state = move.execute()
@@ -58,7 +58,7 @@ class PawnMovesTestCase(unittest.TestCase):
             # given
             state = State(4, 4)
             state.add(piece_position[0], piece_position[1], Pawn(Color.DARK_PIECE))
-            move = Move(state, piece_position, target_position)
+            move = PawnMove(state, piece_position, target_position)
 
             # when
 
@@ -76,7 +76,7 @@ class PawnMovesTestCase(unittest.TestCase):
                 state = State(5, 5)
                 state.add(piece_position[0], piece_position[1], Pawn(piece_color))
                 state.add(target_position[0], target_position[1], Pawn(target_color))
-                beat = Beat(state, piece_position, target_position)
+                beat = PawnBeat(state, piece_position, target_position)
 
                 # when
                 next_state = beat.execute()
@@ -101,7 +101,7 @@ class PawnMovesTestCase(unittest.TestCase):
                 state.add(piece_position[0], piece_position[1], Pawn(piece_color))
                 state.add(target_position[0], target_position[1], Pawn(target_color))
                 state.add(block_position[0], block_position[1], Pawn(block_color))
-                beat = Beat(state, piece_position, target_position)
+                beat = PawnBeat(state, piece_position, target_position)
 
                 # when
 
@@ -129,10 +129,10 @@ class PawnMovesTestCase(unittest.TestCase):
         state.add(ignored_position_1[0], ignored_position_1[1], Pawn(ignored_color))
         state.add(ignored_position_2[0], ignored_position_2[1], Pawn(ignored_color))
 
-        beat = Beat(state, piece_position, target_position_1)
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, target_position_2))
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, ignored_position_1))
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, ignored_position_2))
+        beat = PawnBeat(state, piece_position, target_position_1)
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, target_position_2))
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, ignored_position_1))
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, ignored_position_2))
         beats_list = beat.to_list()
 
         # when
@@ -157,7 +157,7 @@ class PawnMovesTestCase(unittest.TestCase):
             # given
             state = State(3, 3)
             state.add(piece_position[0], piece_position[1], Pawn(Color.LIGHT_PIECE))
-            move = Move(state, piece_position, target_position)
+            move = PawnMove(state, piece_position, target_position)
 
             # when
             next_state = move.execute()
@@ -175,7 +175,7 @@ class PawnMovesTestCase(unittest.TestCase):
             state = State(3, 3)
             state.add(piece_position[0], piece_position[1], Pawn(Color.LIGHT_PIECE))
             state.add(target_position[0], target_position[1], Pawn(Color.DARK_PIECE))
-            beat = Beat(state, piece_position, target_position)
+            beat = PawnBeat(state, piece_position, target_position)
 
             # when
             next_state = beat.execute()
@@ -207,10 +207,10 @@ class PawnMovesTestCase(unittest.TestCase):
         state.add(ignored_position_1[0], ignored_position_1[1], Pawn(ignored_color))
         state.add(ignored_position_2[0], ignored_position_2[1], Pawn(ignored_color))
 
-        beat = Beat(state, piece_position, target_position_1)
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, target_position_2))
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, ignored_position_1))
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, ignored_position_2))
+        beat = PawnBeat(state, piece_position, target_position_1)
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, target_position_2))
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, ignored_position_1))
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, ignored_position_2))
         beats_list = beat.to_list()
 
         # when
@@ -246,8 +246,8 @@ class PawnMovesTestCase(unittest.TestCase):
         state.add(target_position_1[0], target_position_1[1], Pawn(target_color))
         state.add(target_position_2[0], target_position_2[1], Pawn(target_color))
 
-        beat = Beat(state, piece_position, target_position_1)
-        beat.next_beats.append(Beat(beat.execute(), final_position_1, target_position_2))
+        beat = PawnBeat(state, piece_position, target_position_1)
+        beat.next_beats.append(PawnBeat(beat.execute(), final_position_1, target_position_2))
         beats_list = beat.to_list()
 
         # when
@@ -277,7 +277,7 @@ class KingMovesTestCase(unittest.TestCase):
         for target_position in filter(lambda t: t != piece_position, target_positions):
             state = State(size, size)
             state.add(piece_position[0], piece_position[1], King(Color.DARK_PIECE))
-            move = KingsMove(state, piece_position, target_position)
+            move = KingMove(state, piece_position, target_position)
 
             # when
             next_state = move.execute()
@@ -297,7 +297,7 @@ class KingMovesTestCase(unittest.TestCase):
             state = State(size, size)
             state.add(piece_position[0], piece_position[1], King(Color.DARK_PIECE))
             state.add(target_position[0], target_position[1], Pawn(Color.LIGHT_PIECE))
-            beat = KingsBeat(state, piece_position, target_position, final_position)
+            beat = KingBeat(state, piece_position, target_position, final_position)
 
             # when
             next_state = beat.execute()

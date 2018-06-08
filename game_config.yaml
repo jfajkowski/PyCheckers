@@ -6,6 +6,6 @@ dark_player:
     heuristic: dark_pieces_maximizing
     depth: 5
 light_player:
-    strategy: alpha_beta
+    strategy: manual
     heuristic: light_pieces_maximizing
     depth: 5

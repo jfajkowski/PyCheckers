@@ -6,12 +6,16 @@ from typing import Tuple
 
 from elements import State, Piece, Pawn, King, Color, Board
 from heuristics import light_pieces_dark_pieces_difference_heuristic
-from moves import Move, Beat, KingsMove, KingsBeat
+from moves import PawnMove, PawnBeat, KingMove, KingBeat
 
 
 class GameStrategy(ABC):
     def __init__(self, color):
         self._color = color
+
+    @property
+    def color(self):
+        return self._color
 
     @abstractmethod
     def move(self, state: State):
@@ -38,45 +42,41 @@ class GameStrategy(ABC):
         target_positions = piece.target_positions(*piece_position)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and not state.is_occupied(*target_position):
-                move = KingsMove(state, piece_position, target_position) if isinstance(piece, King) else Move(state,
-                                                                                                              piece_position,
-                                                                                                              target_position)
+                move = KingMove(state, piece_position, target_position) if isinstance(piece, King) \
+                       else PawnMove(state, piece_position, target_position)
                 if move.is_valid():
                     moves.append([move])
         return moves
 
-    def _calculate_valid_beats(self, piece_position, state: State, previous_beat: Beat = None):
-        valid_beats = []
+    def _calculate_valid_beats(self, piece_position, state: State, previous_beat: PawnBeat = None):
+        beats = []
         if piece_position is None:
-            return valid_beats
+            return beats
 
         piece = state.get_piece(*piece_position)
         target_positions = piece.target_positions(*piece_position)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and state.is_occupied(*target_position) \
-                    and state.get_piece(*target_position).color != piece.color:
-                beats = []
+                    and state.get_color(*target_position) != piece.color:
+                sub_beats = []
                 if isinstance(piece, King):
-                    final_positions = KingsBeat.calculate_final_positions(piece_position, target_position)
+                    final_positions = KingBeat.calculate_final_positions(piece_position, target_position)
                     for final_position in final_positions:
-                        beats.append(KingsBeat(state, piece_position, target_position, final_position))
+                        sub_beats.append(KingBeat(state, piece_position, target_position, final_position))
                 else:
-                    beats.append(Beat(state, piece_position, target_position))
+                    sub_beats.append(PawnBeat(state, piece_position, target_position))
 
-                for beat in beats:
-                    if beat.is_valid():
-                        next_state = beat.execute()
-                        next_piece = next_state.get_piece(*beat.final_position)
+                for sub_beat in sub_beats:
+                    if sub_beat.is_valid():
+                        next_state = sub_beat.execute()
 
-                        if isinstance(piece, Pawn) and isinstance(next_piece, King):
-                            valid_beats += beat.to_list()
+                        beats += self._calculate_valid_beats(sub_beat.final_position, next_state, sub_beat)
+                        if previous_beat:
+                            previous_beat.next_beats.append(sub_beat)
+                            sub_beat.previous_beat = previous_beat
                         else:
-                            valid_beats += self._calculate_valid_beats(beat.final_position, next_state, beat)
-                            if previous_beat:
-                                previous_beat.next_beats.append(beat)
-                            else:
-                                valid_beats += beat.to_list()
-        return valid_beats
+                            beats += sub_beat.to_list()
+        return beats
 
 
 class AlphaBetaGameStrategy(GameStrategy):
@@ -139,15 +139,15 @@ class ManualGameStrategy(GameStrategy):
                 for event in ev:
                     if event.type == pygame.MOUSEBUTTONUP:
                         x, y = pygame.mouse.get_pos()
-                        x = int(x / (500 / Board.ROWS))  # board width
-                        y = int(y / (500 / Board.COLS))  # board height
+                        x = int(x / (640 / Board.ROWS))  # board width
+                        y = int(y / (640 / Board.COLS))  # board height
                         click_up = (x, y)
                         move_clicked = True
 
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         x, y = pygame.mouse.get_pos()
-                        x = int(x / (500 / Board.ROWS))
-                        y = int(y / (500 / Board.COLS))
+                        x = int(x / (640 / Board.ROWS))
+                        y = int(y / (640 / Board.COLS))
                         click_down = (x, y)
 
             if click_up == click_down:

@@ -36,8 +36,8 @@ class Move:
         next_state.remove(*self.piece_position)
         final_position = self.target_position
         next_state.add(final_position[0], final_position[1], self.piece)
-        if isinstance(self.piece, Pawn) and self.is_on_last_position(final_position):
-            next_state.transform_into_king(self.piece)
+        if self.is_on_last_position(final_position):
+            next_state.transform_into_king(*final_position)
         return next_state
 
     def is_on_last_position(self, piece_position):
@@ -99,13 +99,11 @@ class Beat(Move):
 
     def execute(self):
         next_state = self.state
-        piece = next_state.get_piece(*self.piece_position)
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
-        final_position = self.calculate_final_position()
-        next_state.add(final_position[0], final_position[1], piece)
-        if isinstance(piece, Pawn) and self.is_on_last_position(final_position):
-            next_state.transform_into_king(piece)
+        next_state.add(self.final_position[0], self.final_position[1], self.piece)
+        if self.is_on_last_position(self.final_position):
+            next_state.transform_into_king(*self.final_position)
         return next_state
 
     # can be replaced by calculate_final_positions() method. Then final pos should be set in constructor, or setter method.
@@ -135,6 +133,13 @@ class KingsMove(Move):
             return self.is_path_empty(self.piece_position, self.target_position, True)
         return False
 
+    def execute(self):
+        next_state = self.state
+        next_state.remove(*self.piece_position)
+        final_position = self.target_position
+        next_state.add(final_position[0], final_position[1], self.piece)
+        return next_state
+
 
 class KingsBeat(Beat):
     def __init__(self, state: State, piece_position, target_position, final_position):
@@ -154,8 +159,7 @@ class KingsBeat(Beat):
 
     def execute(self):
         next_state = self.state
-        piece = next_state.get_piece(*self.piece_position)
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
-        next_state.add(self.final_position[0], self.final_position[1], piece)
+        next_state.add(self.final_position[0], self.final_position[1], self.piece)
         return next_state

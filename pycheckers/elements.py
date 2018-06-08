@@ -90,7 +90,7 @@ class State:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
-        self.state_matrix = np.empty((rows, cols), dtype=Piece)
+        self.matrix = np.empty((rows, cols), dtype=Piece)
 
     def __copy__(self):
         cls = self.__class__
@@ -108,39 +108,41 @@ class State:
         return result
 
     def add(self, x, y, piece):
-        self.state_matrix[y][x] = piece
+        self.matrix[y][x] = piece
 
     def remove(self, x, y):
-        self.state_matrix[y][x] = None
+        self.matrix[y][x] = None
 
     def get_piece(self, x, y):
-        return self.state_matrix[y][x]
+        return self.matrix[y][x]
+
+    def get_color(self, x, y):
+        return self.matrix[y][x].color
 
     def get_position(self, piece):
         for y in range(self.rows):
             for x in range(self.cols):
-                if self.state_matrix[y][x] is piece:
+                if self.matrix[y][x] is piece:
                     return x, y
 
     def is_occupied(self, x, y):
-        return self.state_matrix[y][x] is not None
+        return self.matrix[y][x] is not None
 
-    def pieces(self, color):
+    def piece_positions(self, color):
         result = []
         for y in range(self.rows):
             for x in range(self.cols):
-                if self.is_occupied(x, y) and self.get_piece(x, y).color == color:
-                    result.append(self.state_matrix[y][x])
+                if self.is_occupied(x, y) and self.get_color(x, y) == color:
+                    result.append((x, y))
         return result
 
     def is_in_bounds(self, x, y):
         return 0 <= x < self.cols and 0 <= y < self.rows
 
-    def transform_into_king(self, piece):
-        piece_position = self.get_position(piece)
-        king = King(piece.color)
-        self.add(piece_position[0], piece_position[1], king)
-        return king
+    def transform_into_king(self, x, y):
+        color = self.get_color(x, y)
+        self.remove(x, y)
+        self.add(x, y, King(color))
 
 
 class Piece(ABC):
@@ -148,8 +150,9 @@ class Piece(ABC):
         self.color = color
         self.marked = False
 
+    @staticmethod
     @abstractmethod
-    def positions(self, state):
+    def target_positions(x, y):
         pass
 
     def draw(self, surface, x, y):
@@ -182,11 +185,11 @@ class Piece(ABC):
 
 
 class Pawn(Piece):
-    def positions(self, state):
-        x, y = state.get_position(self)
-        all_moves = [(x - 1, y + 1), (x + 1, y + 1),
-                     (x - 1, y - 1), (x + 1, y - 1)]
-        return (x, y), all_moves
+    @staticmethod
+    def target_positions(x, y):
+        target_positions = [(x - 1, y + 1), (x + 1, y + 1),
+                            (x - 1, y - 1), (x + 1, y - 1)]
+        return target_positions
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         pygame.draw.circle(surface, self.color, piece_coordinates, piece_size)
@@ -204,15 +207,15 @@ class Pawn(Piece):
 class King(Pawn):
     CROWN_IMG = pygame.image.load(pkg_resources.resource_filename(__name__, 'sprites/crown.png'))
 
-    def positions(self, state):
-        x, y = state.get_position(self)
-        all_moves = []
+    @staticmethod
+    def target_positions(x, y):
+        target_positions = []
         for j in range(-Board.COLS, Board.COLS):
             for i in range(-Board.COLS, Board.COLS):
                 if -1 < (x + 1 * i) < Board.COLS and -1 < (y + 1 * j) < Board.COLS and i != 0 and j != 0 and i*i == j*j:
-                    all_moves.append((x + 1 * i, y + 1 * j))
+                    target_positions.append((x + 1 * i, y + 1 * j))
 
-        return (x, y), all_moves
+        return target_positions
 
     def draw_marked(self, surface, piece_coordinates, piece_size):
         super().draw_marked(surface, piece_coordinates, piece_size)

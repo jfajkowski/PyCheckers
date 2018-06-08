@@ -19,24 +19,23 @@ class GameStrategy(ABC):
 
     def _calculate_all_moves(self, state: State, color: Tuple[int, int, int]):
         beats = []
-        for piece in state.pieces(color):
-            beats += self._calculate_valid_beats(piece, state)
-
+        for piece_position in state.piece_positions(color):
+            beats += self._calculate_valid_beats(piece_position, state)
         if beats:
             return beats
 
         moves = []
-        for piece in state.pieces(color):
-            moves += self._calculate_valid_moves(piece, state)
-
+        for piece_position in state.piece_positions(color):
+            moves += self._calculate_valid_moves(piece_position, state)
         if moves:
             return moves
 
         return []
 
-    def _calculate_valid_moves(self, piece: Piece, state: State):
+    def _calculate_valid_moves(self, piece_position, state: State):
         moves = []
-        piece_position, target_positions = piece.positions(state)
+        piece = state.get_piece(*piece_position)
+        target_positions = piece.target_positions(*piece_position)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and not state.is_occupied(*target_position):
                 move = KingsMove(state, piece_position, target_position) if isinstance(piece, King) else Move(state,
@@ -46,12 +45,13 @@ class GameStrategy(ABC):
                     moves.append([move])
         return moves
 
-    def _calculate_valid_beats(self, piece: Piece, state: State, previous_beat: Beat = None):
+    def _calculate_valid_beats(self, piece_position, state: State, previous_beat: Beat = None):
         valid_beats = []
-        if piece is None:
+        if piece_position is None:
             return valid_beats
 
-        piece_position, target_positions = piece.positions(state)
+        piece = state.get_piece(*piece_position)
+        target_positions = piece.target_positions(*piece_position)
         for target_position in target_positions:
             if state.is_in_bounds(*target_position) and state.is_occupied(*target_position) \
                     and state.get_piece(*target_position).color != piece.color:
@@ -71,7 +71,7 @@ class GameStrategy(ABC):
                         if isinstance(piece, Pawn) and isinstance(next_piece, King):
                             valid_beats += beat.to_list()
                         else:
-                            valid_beats += self._calculate_valid_beats(piece, next_state, beat)
+                            valid_beats += self._calculate_valid_beats(beat.final_position, next_state, beat)
                             if previous_beat:
                                 previous_beat.next_beats.append(beat)
                             else:
@@ -122,10 +122,10 @@ class ManualGameStrategy(GameStrategy):
     def move(self, state: State):
 
         beats = []
-        for piece in state.pieces(self._color):
+        for piece in state.piece_positions(self._color):
             beats += self._calculate_valid_beats(piece, state)
         moves = []
-        for piece in state.pieces(self._color):
+        for piece in state.piece_positions(self._color):
             moves += self._calculate_valid_moves(piece, state)
 
         while True:
@@ -202,14 +202,14 @@ class MinMaxGameStrategy(GameStrategy):
 class RandomGameStrategy(GameStrategy):
     def move(self, state: State):
         beats = []
-        for piece in state.pieces(self._color):
+        for piece in state.piece_positions(self._color):
             beats += self._calculate_valid_beats(piece, state)
 
         if beats:
             return random.choice(beats)
 
         moves = []
-        for piece in state.pieces(self._color):
+        for piece in state.piece_positions(self._color):
             moves += self._calculate_valid_moves(piece, state)
 
         if moves:

@@ -22,22 +22,38 @@ class Game:
         moves = []
         self._board.prepare_pieces()
 
+        paused = False
         while True:
             self._board.draw(self._surface)
             pygame.display.update()
-            if moves:
-                move = moves.pop()
-                logging.debug('Player: {}, Move: {}'.format(Color.name(current_player.color), move))
-                self._board.state = move.execute()
-                clock.tick(self._max_fps)
-            else:
-                current_player = self._player_1 if current_player is not self._player_1 else self._player_2
-                moves = current_player.move(self._board.state)
+
+            if not paused:
                 if moves:
-                    if len(moves) > 0:
-                        moves = list(reversed(moves))
+                    move = moves.pop()
+                    logging.debug('Player: {}, Move: {}'.format(Color.name(current_player.color), move))
+                    self._board.state = move.execute()
+                    clock.tick(self._max_fps)
                 else:
-                    break
+                    current_player = self._player_1 if current_player is not self._player_1 else self._player_2
+                    moves = current_player.move(self._board.state)
+                    if moves:
+                        if len(moves) > 0:
+                            moves = list(reversed(moves))
+                    else:
+                        break
+
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        paused = not paused
+                    elif event.key in [pygame.K_PLUS, pygame.K_KP_PLUS]:
+                        self._max_fps += 1
+                    elif event.key in [pygame.K_MINUS, pygame.K_KP_MINUS]:
+                        self._max_fps -= 1
+                elif event.type == pygame.QUIT:
+                    return
+
 
 
 if __name__ == '__main__':

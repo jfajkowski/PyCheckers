@@ -92,13 +92,13 @@ class AlphaBetaGameStrategy(GameStrategy):
 
         for move in self._calculate_all_moves(state, self._color):
             initial_state = move[-1].execute()
-            value = self.alpha_beta(initial_state, Color.opposite(self._color), alpha, beta, self._depth)
+            value = self.alpha_beta(initial_state, Color.opposite(self._color), alpha, beta, self._depth - 1)
             if value > best_value:
                 best_value, best_move = value, move
         return best_move
 
     def alpha_beta(self, state, color: Tuple[int, int, int], alpha, beta, depth):
-        if depth == 0:
+        if depth == 0 or state.is_ending():
             heuristic = self._heuristic(state)
             return heuristic
 
@@ -180,7 +180,7 @@ class MinMaxGameStrategy(GameStrategy):
         return best_move
 
     def min_max(self, state: State, color: Tuple[int, int, int], depth: int):
-        if depth == 0:
+        if depth == 0 or state.is_ending():
             return self._heuristic(state)
 
         if color == self._color:

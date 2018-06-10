@@ -91,6 +91,8 @@ class State:
         self.rows = rows
         self.cols = cols
         self.matrix = np.empty((rows, cols), dtype=Piece)
+        self.light_pieces = 0
+        self.dark_pieces = 0
 
     def __copy__(self):
         cls = self.__class__
@@ -109,9 +111,18 @@ class State:
 
     def add(self, x, y, piece):
         self.matrix[y][x] = piece
+        if piece.color == Color.LIGHT_PIECE:
+            self.light_pieces += 1
+        elif piece.color == Color.DARK_PIECE:
+            self.dark_pieces += 1
 
     def remove(self, x, y):
+        piece = self.get_piece(x, y)
         self.matrix[y][x] = None
+        if piece.color == Color.LIGHT_PIECE:
+            self.light_pieces -= 1
+        elif piece.color == Color.DARK_PIECE:
+            self.dark_pieces -= 1
 
     def get_piece(self, x, y):
         return self.matrix[y][x]
@@ -143,6 +154,9 @@ class State:
         color = self.get_color(x, y)
         self.remove(x, y)
         self.add(x, y, King(color))
+
+    def is_ending(self):
+        return self.light_pieces == 0 or self.dark_pieces == 0
 
 
 class Piece(ABC):

@@ -95,7 +95,7 @@ class AlphaBetaGameStrategy(GameStrategy):
             value = self.alpha_beta(initial_state, Color.opposite(self._color), alpha, beta, self._depth - 1)
             if value > best_value:
                 best_value, best_move = value, move
-        return best_move
+        return best_move, False
 
     def alpha_beta(self, state, color: Tuple[int, int, int], alpha, beta, depth):
         if depth == 0 or state.is_ending():
@@ -119,6 +119,10 @@ class AlphaBetaGameStrategy(GameStrategy):
 
 
 class ManualGameStrategy(GameStrategy):
+    def __init__(self, color):
+        super().__init__(color)
+        self._next_beat_piece = None
+
     def move(self, state: State):
 
         beats = []
@@ -153,15 +157,37 @@ class ManualGameStrategy(GameStrategy):
             if click_up == click_down:
                 continue
 
+            if self._next_beat_piece and self._next_beat_piece != click_down:
+                continue
+
             if beats:
+                current_beat = None
                 for b in beats:
                     if b[0].piece_position == click_down and b[0].final_position == click_up:
-                        return b
+                        if current_beat is None or len(current_beat[0].next_beats) < len(b[0].next_beats):
+                            current_beat = b
+
+                if current_beat is None:
+                    continue
+
+                piece = state.get_piece(*click_down)
+                beat_to_return = None
+                if isinstance(piece, King):
+                    beat_to_return = KingBeat(state, current_beat[0].piece_position, current_beat[0].target_position, current_beat[0].final_position)
+                else:
+                    beat_to_return = PawnBeat(state, current_beat[0].piece_position, current_beat[0].target_position)
+
+                if len(current_beat[0].next_beats) > 0:
+                    self._next_beat_piece = current_beat[0].final_position
+                    return [beat_to_return], True
+                else:
+                    self._next_beat_piece = None
+                    return [beat_to_return], False
 
             if moves and not beats:
                 for m in moves:
                     if m[0].piece_position == click_down and m[0].target_position == click_up:
-                        return m
+                        return m, False
 
 
 class MinMaxGameStrategy(GameStrategy):
@@ -177,7 +203,7 @@ class MinMaxGameStrategy(GameStrategy):
             value = self.min_max(next_state, Color.opposite(self._color), self._depth - 1)
             if value > best_value:
                 best_move, best_value = move, value
-        return best_move
+        return best_move, False
 
     def min_max(self, state: State, color: Tuple[int, int, int], depth: int):
         if depth == 0 or state.is_ending():
@@ -206,11 +232,11 @@ class RandomGameStrategy(GameStrategy):
             beats += self._calculate_valid_beats(piece, state)
 
         if beats:
-            return random.choice(beats)
+            return random.choice(beats), False
 
         moves = []
         for piece in state.piece_positions(self._color):
             moves += self._calculate_valid_moves(piece, state)
 
         if moves:
-            return random.choice(moves)
+            return random.choice(moves), False

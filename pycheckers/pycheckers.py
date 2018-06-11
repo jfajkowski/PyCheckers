@@ -23,6 +23,7 @@ class Game:
         self._board.prepare_pieces()
 
         paused = False
+        is_next_beat = False
         while True:
             self._board.draw(self._surface)
             pygame.display.update()
@@ -34,8 +35,9 @@ class Game:
                     self._board.state = move.execute()
                     clock.tick(self._max_fps)
                 else:
-                    current_player = self._player_1 if current_player is not self._player_1 else self._player_2
-                    moves = current_player.move(self._board.state)
+                    if not is_next_beat:
+                        current_player = self._player_1 if current_player is not self._player_1 else self._player_2
+                    moves, is_next_beat = current_player.move(self._board.state)
                     if moves:
                         if len(moves) > 0:
                             moves = list(reversed(moves))

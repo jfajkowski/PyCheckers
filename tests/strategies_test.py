@@ -19,7 +19,7 @@ class MinMaxTestCase(unittest.TestCase):
         state.add(3, 3, Pawn(Color.DARK_PIECE))
 
         # when
-        move = strategy.move(state)
+        move, is_next_beat = strategy.move(state)
         next_state = move[-1].execute()
 
         # then
@@ -44,7 +44,7 @@ class MinMaxTestCase(unittest.TestCase):
         state.add(0, 2, Pawn(Color.DARK_PIECE))
 
         # when
-        move = strategy.move(state)
+        move, is_next_beat = strategy.move(state)
         next_state = move[-1].execute()
 
         # then
@@ -63,7 +63,7 @@ class MinMaxTestCase(unittest.TestCase):
         state.add(0, 0, Pawn(Color.DARK_PIECE))
 
         # when
-        move = strategy.move(state)
+        move, is_next_beat = strategy.move(state)
         next_state = move[-1].execute()
 
         # then

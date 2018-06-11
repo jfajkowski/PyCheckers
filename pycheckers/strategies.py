@@ -131,11 +131,20 @@ class ManualGameStrategy(GameStrategy):
     def move(self, state: State):
 
         beats = []
-        for piece in state.piece_positions(self._color):
-            beats += self._calculate_valid_beats(piece, state)
+        for piece_position in state.piece_positions(self.color):
+            beats += self._calculate_valid_beats(piece_position, state)
+        if beats:
+            for beat in beats:
+                if isinstance(beat[-1], PawnBeat) and beat[-1].is_to_last_position():
+                    beat[-1].transform = True
+
         moves = []
-        for piece in state.piece_positions(self._color):
-            moves += self._calculate_valid_moves(piece, state)
+        for piece_position in state.piece_positions(self.color):
+            moves += self._calculate_valid_moves(piece_position, state)
+        if moves:
+            for move in moves:
+                if isinstance(move[-1], PawnMove) and move[-1].is_to_last_position():
+                    move[-1].transform = True
 
         while True:
             click_up = None

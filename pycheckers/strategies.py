@@ -26,12 +26,18 @@ class GameStrategy(ABC):
         for piece_position in state.piece_positions(color):
             beats += self._calculate_valid_beats(piece_position, state)
         if beats:
+            for beat in beats:
+                if isinstance(beat[-1], PawnBeat) and beat[-1].is_to_last_position():
+                    beat[-1].transform = True
             return beats
 
         moves = []
         for piece_position in state.piece_positions(color):
             moves += self._calculate_valid_moves(piece_position, state)
         if moves:
+            for move in moves:
+                if isinstance(move[-1], PawnMove) and move[-1].is_to_last_position():
+                    move[-1].transform = True
             return moves
 
         return []
@@ -73,7 +79,6 @@ class GameStrategy(ABC):
                         beats += self._calculate_valid_beats(sub_beat.final_position, next_state, sub_beat)
                         if previous_beat:
                             previous_beat.next_beats.append(sub_beat)
-                            sub_beat.previous_beat = previous_beat
                         else:
                             beats += sub_beat.to_list()
         return beats

@@ -12,7 +12,9 @@ class PawnMove:
         self._state = copy(state)
         self.piece_position = piece_position
         self.target_position = target_position
+        self.final_position = target_position
         self.piece = state.get_piece(*self.piece_position)
+        self.transform = False
 
     @property
     def state(self):
@@ -34,16 +36,15 @@ class PawnMove:
     def execute(self):
         next_state = self.state
         next_state.remove(*self.piece_position)
-        final_position = self.target_position
-        next_state.add(final_position[0], final_position[1], self.piece)
-        if self.is_on_last_position(final_position):
-            next_state.transform_into_king(*final_position)
+        next_state.add(self.final_position[0], self.final_position[1], self.piece)
+        if self.transform:
+            next_state.transform_into_king(*self.final_position)
         return next_state
 
-    def is_on_last_position(self, piece_position):
-        if self.piece.color == Color.DARK_PIECE and piece_position[1] == self._state.rows - 1:
+    def is_to_last_position(self):
+        if self.piece.color == Color.DARK_PIECE and self.final_position[1] == self._state.rows - 1:
             return True
-        elif self.piece.color == Color.LIGHT_PIECE and piece_position[1] == 0:
+        elif self.piece.color == Color.LIGHT_PIECE and self.final_position[1] == 0:
             return True
         return False
 
@@ -94,7 +95,6 @@ class PawnBeat(PawnMove):
         super().__init__(state, piece_position, target_position)
         self.beat_piece = self.state.get_piece(*target_position)
         self.next_beats = []
-        self.previous_beat = None
         self.final_position = self.calculate_final_position()
 
     def is_valid(self):
@@ -108,7 +108,7 @@ class PawnBeat(PawnMove):
         next_state.remove(*self.piece_position)
         next_state.remove(*self.target_position)
         next_state.add(self.final_position[0], self.final_position[1], self.piece)
-        if not (self.previous_beat and self.next_beats) and self.is_on_last_position(self.final_position):
+        if self.transform:
             next_state.transform_into_king(*self.final_position)
         return next_state
 
@@ -143,19 +143,10 @@ class KingMove(PawnMove):
     def is_valid(self):
         return self.is_path_empty(self.piece_position, self.target_position, True)
 
-    def execute(self):
-        next_state = self.state
-        next_state.remove(*self.piece_position)
-        final_position = self.target_position
-        next_state.add(final_position[0], final_position[1], self.piece)
-        return next_state
-
 
 class KingBeat(PawnBeat):
     def __init__(self, state: State, piece_position, target_position, final_position):
         super().__init__(state, piece_position, target_position)
-        self.beat_piece = self.state.get_piece(*target_position)
-        self.next_beats = []
         self.final_position = final_position
 
     # valid when there is no piece on the path between attacking piece and the aim and between aim and the final position (including it).
@@ -166,10 +157,3 @@ class KingBeat(PawnBeat):
                 return True
             return False
         return False
-
-    def execute(self):
-        next_state = self.state
-        next_state.remove(*self.piece_position)
-        next_state.remove(*self.target_position)
-        next_state.add(self.final_position[0], self.final_position[1], self.piece)
-        return next_state
